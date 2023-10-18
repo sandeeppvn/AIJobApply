@@ -1,0 +1,8 @@
+requests
+pandas
+Flask
+selenium
+chromedriver-binary
+openai
+PyPDF2
+tqdm
