@@ -44,45 +44,34 @@ Templates used for job applications:
 
 ## Dependencies
 
-- **Requests**: HTTP requests.
-- **Pandas**: Data manipulation.
-- **Flask**: Web framework.
-- **Selenium**: Web testing.
-- **Chromedriver-Binary**: Selenium WebDriver.
+- **ConfigParser**: Configuration file parser.
+- **mock**: Mock object library.
 - **OpenAI**: OpenAI API client.
 - **PyPDF2**: PDF manipulation.
-- **TQDM**: Progress bars.
-
+- **pytest**: Testing framework.
+- **python-dotenv**: Environment variable management.
+- **tqdm**: Progress bars.
+- **click**: Command line interface creation.
+- **requests**: HTTP requests.
 
 ## Getting Started
 
 Follow these steps to install and use `AIJobApply`:
 
-### Installation
+### Download
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/your_username/AIJobApply.git
+    git clone https://github.com/sandeeppvn/AIJobApply.git
     ```
 2. Navigate to the project directory:
     ```bash
     cd AIJobApply
     ```
-3. Install the project as a package:
-    ```bash
-    pip install .
-    ```
 
 ### Configuration
 
-
-Certainly! I'll add steps to modify the template files within the "Configuration" section of the README.md.
-
-markdown
-Copy code
-### Configuration
-
-1. **Environment Variables**:
+3. **Environment Variables**:
     - Rename the `.env.example` file (if it exists) to `.env`.
     - Open the `.env` file and modify the environment variables with your credentials and settings. For example:
         ```env
@@ -92,12 +81,21 @@ Copy code
         GMAIL_PASSWORD=YOUR_GMAIL_PASSWORD
         ```
         (No spaces around the =, dont use quotes)
-2. **Modify Templates**:
+4. **Modify Templates**:
     - Navigate to the `documents` directory.
     - Modify the template files as per your requirements:
         - `cover_letter_template.pdf`: Update with your preferred cover letter format.
         - `resume_template.pdf`: Replace with your resume template.
         - `email_template.pdf`: Adjust the email format to your liking.
+
+
+    
+5. Install the project as a package in editable mode:
+    ```bash
+    pip install -e .
+    ```
+    
+    ```
 
 ### Usage
 
