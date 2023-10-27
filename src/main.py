@@ -36,3 +36,7 @@ def aijobapply_cli():
 
     # Run job application process
     job_processor.process_jobs(args.jobs_database_id)
+
+
+if __name__ == "__main__":
+    aijobapply_cli()
