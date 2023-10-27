@@ -31,13 +31,17 @@ def load_templates(path: str = "documents") -> dict:
     return templates
 
 
-def send_email(email_content: str, recipient_email: str, subject: str = "No Subject") -> None:
+def send_email(
+    email_content: str,
+    recipient_email: str,
+    sender_email: str,
+    sender_password: str,
+    subject: str,
+) -> None:
     """Send an email using Gmail."""
-    sender_email = os.getenv("GMAIL_ADDRESS")
-    sender_password = os.getenv("GMAIL_PASSWORD")
 
     if not sender_email or not sender_password:
-        logger.error("Gmail credentials not found in environment variables.")
+        logger.error("Gmail credentials not found")
         return
 
     message = MIMEMultipart()

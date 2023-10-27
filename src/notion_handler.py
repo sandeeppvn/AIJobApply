@@ -23,15 +23,12 @@ class NotionAPIError(Exception):
 
 
 class Notion:
-    def __init__(self):
+    def __init__(self, notion_secret_key: str):
         """
         Initialize Notion object and load environment variables.
         """
-        load_dotenv(find_dotenv())
-        self.notion_url = self.api_key = str(os.getenv("NOTION_URL"))
-        self.headers = {**HEADERS, "Authorization": f"Bearer {os.getenv('NOTION_SECRET_KEY')}"}
-        self.contacts_id = str(os.getenv("NOTION_CONTACTS_ID"))
-        self.jobs_id = str(os.getenv("NOTION_JOBS_ID"))
+        self.notion_url = self.api_key = "https://api.notion.com/v1/"
+        self.headers = {**HEADERS, "Authorization": f"Bearer {notion_secret_key}"}
 
     def create_payload(self, filter: dict) -> dict:
         """

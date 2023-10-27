@@ -11,14 +11,13 @@ logging.basicConfig(level=logging.INFO)
 
 
 class Openai:
-    def __init__(self):
+    def __init__(self, openapi_key: str, model: str):
         """
-        Initialize Openai object by loading environment variables and setting API key.
+        Initialize Openai object and set API key.
         """
-        load_dotenv(find_dotenv())
-        self.api_key = str(os.getenv("OPENAI_API_KEY"))
-        self.model = str(os.getenv("OPENAI_MODEL"))
-        openai.api_key = self.api_key
+
+        openai.api_key = openapi_key
+        self.model = model
 
     def query_prompt(self, prompt: str) -> str:
         """

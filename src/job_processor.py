@@ -1,4 +1,8 @@
 import logging
+import os
+from typing import Optional
+
+from dotenv import find_dotenv, load_dotenv
 
 from src.email_handler import EmailHandler
 from src.notion_handler import Notion
@@ -8,13 +12,47 @@ logger = logging.getLogger(__name__)
 
 
 class JobProcessor:
-    def __init__(self):
+    def __init__(
+        self,
+        templates_path: str = "templates",
+        gmail: Optional[str] = None,
+        password: Optional[str] = None,
+        notion_secret_key: Optional[str] = None,
+        openapi_key: Optional[str] = None,
+        model: Optional[str] = None,
+    ):
         """
-        Initialize a JobProcessor instance with required handlers.
+        Initialize a JobProcessor instance with required handlers and credentials.
         """
-        self.notion = Notion()
-        self.openai = Openai()
-        self.email_handler = EmailHandler()
+
+        # if not specified, details from the .env file will be used
+        self.templates_path = templates_path
+
+        load_dotenv(find_dotenv())
+        # if not specified, details from the .env file will be used and assinged to self
+        self.gmail = gmail or os.getenv("GMAIL_ADDRESS")
+        self.password = password or os.getenv("GMAIL_PASSWORD")
+        self.notion_secret_key = notion_secret_key or os.getenv("NOTION_SECRET_KEY")
+        self.openapi_key = openapi_key or os.getenv("OPENAI_API_KEY")
+        self.model = model or os.getenv("OPENAI_MODEL")
+
+        # Exception handling
+        if self.gmail is None:
+            raise ValueError("gmail is not provided and GMAIL_ADDRESS is not set in environment variables.")
+        if self.password is None:
+            raise ValueError("password is not provided and GMAIL_PASSWORD is not set in environment variables.")
+        if self.notion_secret_key is None:
+            raise ValueError(
+                "notion_secret_key is not provided and NOTION_SECRET_KEY is not set in environment variables."
+            )
+        if self.openapi_key is None:
+            raise ValueError("openapi_key is not provided and OPENAI_API_KEY is not set in environment variables.")
+        if self.model is None:
+            raise ValueError("model is not provided and OPENAI_MODEL is not set in environment variables.")
+
+        self.notion = Notion(self.notion_secret_key)
+        self.openai = Openai(self.openapi_key, self.model)
+        self.email_handler = EmailHandler(self.gmail, self.password)
 
     def filter_jobs_by_status(self, jobs, status):
         """
@@ -115,12 +153,20 @@ class JobProcessor:
             processed_jobs.append(email_approved_job)
         return processed_jobs
 
-    def process_jobs(self):
+    def process_jobs(self, jobs_database_id: Optional[str] = None):
         """
         Main function to process jobs based on their status.
+        Parameters:
+        - jobs_database_id (str): ID of the Notion database. If not specified, details from the .env file will be used.
         """
+        load_dotenv(find_dotenv())
+        jobs_id = jobs_database_id or os.getenv("JOBS_DATABASE_ID")
+        if jobs_id is None:
+            raise ValueError(
+                "jobs_database_id is not provided and JOBS_DATABASE_ID is not set in environment variables."
+            )
         filter = {"Status": ["Saved", "Email Ready", "Email Approved"]}
-        all_jobs = self.notion.get_pages(self.notion.jobs_id, filter)
+        all_jobs = self.notion.get_pages(jobs_id, filter)
         new_jobs = self.filter_jobs_by_status(all_jobs, "Saved")
         email_ready_jobs = self.filter_jobs_by_status(all_jobs, "Email Ready")
         email_approved_jobs = self.filter_jobs_by_status(all_jobs, "Email Approved")
