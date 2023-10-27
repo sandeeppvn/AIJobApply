@@ -1,0 +1,32 @@
+# FILEPATH: /Users/sandeeppvn/GitHub/AIJobApply/pyproject.toml
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "AIJobApply"
+version = "0.1.0"
+description = "Package to apply for jobs automatically and send emails"
+authors = [{name = "Sandeeppvn", email = "sandeeppvn@gmail.com"}]
+readme = "README.md"
+dependencies = [
+    "ConfigParser==6.0.0",
+    "mock==5.1.0",
+    "openai==0.27.4",
+    "PyPDF2==3.0.1",
+    "pytest==7.4.3",
+    "python-dotenv==1.0.0",
+    "tqdm==4.65.0",
+    "click==8.1.3",
+    "requests==2.28.2"
+]
+
+[project.urls]
+homepage =  "https://github.com/sandeeppvn/AIJobApply"
+
+[project.scripts]
+aijobapply = "src.main:aijobapply_cli"
+
+
+

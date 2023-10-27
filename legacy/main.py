@@ -1,13 +1,12 @@
-from update_jobs import UpdateJobs
-from get_jobs import NotionJobsClass
-from PyPDF2 import PdfReader
+from src.update_jobs import UpdateJobs
+from src.get_jobs import GetJobsClass
 
 def main():
     # Load the templates
     templates = load_templates()
 
     # Get all the new jobs from the Notion database
-    notionJobs = NotionJobsClass()
+    notionJobs = GetJobsClass()
     new_jobs = notionJobs.get_jobs()
 
     # Get the job details (job description and email) scrapping from the job link and update the records in the Notion database
@@ -25,13 +24,13 @@ def load_templates(path = 'documents') -> dict:
 
     # Get the email, cover letter and resume template from documents folder
     reader = PdfReader(f'{path}/cover_letter_template.pdf')
-    templates['cover_letter_template'] = reader.pages[0].extractText
+    templates['cover_letter_template'] = reader.pages[0].extract_text
 
     reader = PdfReader(f'{path}/resume_template.pdf')
-    templates['resume_template'] = reader.pages[0].extractText
+    templates['resume_template'] = reader.pages[0].extract_text
 
     reader = PdfReader(f'{path}/email_template.pdf')
-    templates['email_template'] = reader.pages[0].extractText
+    templates['email_template'] = reader.pages[0].extract_text
 
 
     return templates
