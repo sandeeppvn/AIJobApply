@@ -1,4 +1,9 @@
 import argparse
+import os
+
+cwd = os.getcwd()
+os.environ["PYTHONPATH"] = cwd
+
 
 from src.job_processor import JobProcessor
 

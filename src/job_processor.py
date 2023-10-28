@@ -1,5 +1,6 @@
 import logging
 import os
+from operator import ge
 from typing import Optional
 
 from dotenv import find_dotenv, load_dotenv
@@ -79,12 +80,12 @@ class JobProcessor:
         """
         processed_jobs = []
         for new_job in new_jobs:
-            if new_job["properties"]["Email"]["email"]:
+            if new_job["properties"]["Email"]["rich_text"]:
                 new_job["properties"]["Status"]["select"]["name"] = "Email Ready"
                 processed_jobs.append(new_job)
             else:
-                if new_job["properties"]["Contact Details"]["text"]:
-                    email = self.openai.find_email(new_job["properties"]["Contact Details"]["text"])
+                if new_job["properties"]["Contact Details"]["rich_text"]:
+                    email = self.openai.find_email(new_job["properties"]["Contact Details"]["rich_text"])
                     if email:
                         new_job["properties"]["Email"]["email"] = email
                         new_job["properties"]["Status"]["select"]["name"] = "Email Ready"
@@ -109,25 +110,41 @@ class JobProcessor:
         """
         processed_jobs = []
         for email_ready_job in email_ready_jobs:
+            if (
+                not email_ready_job["properties"]["Email"]["rich_text"]
+                and not email_ready_job["properties"]["Contact Details"]["rich_text"]
+            ):
+                email_ready_job["properties"]["Status"]["select"]["name"] = "Email required"
+                processed_jobs.append(email_ready_job)
+                continue
+
+            if email_ready_job["properties"]["Contact Details"]["rich_text"]:
+                contact_details = email_ready_job["properties"]["Contact Details"]["rich_text"][0]["text"]["content"]
+            else:
+                contact_details = ""
             generated_content = self.openai.generate_custom_contents(
-                description=email_ready_job["properties"]["Description"]["text"][0]["text"]["content"],
+                description=email_ready_job["properties"]["Description"]["rich_text"][0]["text"]["content"],
                 position=email_ready_job["properties"]["Position"]["select"]["name"],
                 company_name=email_ready_job["properties"]["Company Name"]["title"][0]["text"]["content"],
                 job_link=email_ready_job["properties"]["Link"]["url"],
-                contact_details=email_ready_job["properties"]["Contact Details"]["text"],
+                contact_details=contact_details,
             )
 
-            email_ready_job["properties"]["Email Content"]["rich_text"] = generated_content["email"]
-            email_ready_job["properties"]["Cover Letter Content"]["rich_text"] = generated_content["cover_letter"]
-            email_ready_job["properties"]["Resume Content"]["rich_text"] = generated_content["resume"]
-            email_ready_job["properties"]["Description"]["text"][0]["text"]["content"] = generated_content[
+            email_ready_job["properties"]["Email Content"]["rich_text"][0]["text"]["content"] = generated_content[
+                "email"
+            ]
+            email_ready_job["properties"]["Cover Letter Content"]["rich_text"][0]["text"][
+                "content"
+            ] = generated_content["cover_letter"]
+            email_ready_job["properties"]["Resume Content"]["rich_text"][0]["text"]["content"] = generated_content[
+                "resume"
+            ]
+            email_ready_job["properties"]["Description"]["rich_text"][0]["text"]["content"] = generated_content[
                 "description"
             ]
-            email_ready_job["properties"]["Email Subject Line"]["title"][0]["text"]["content"] = generated_content[
-                "email_subject_line"
-            ]
+            email_ready_job["email_subject_line"] = generated_content["email_subject_line"]
 
-            email_ready_job["properties"]["Status"]["select"]["name"] = "Approval Required"
+            email_ready_job["properties"]["Status"]["select"]["name"] = "Email Approval Required"
             processed_jobs.append(email_ready_job)
         return processed_jobs
 
@@ -144,36 +161,43 @@ class JobProcessor:
         processed_jobs = []
         for email_approved_job in email_approved_jobs:
             email_content = email_approved_job["properties"]["Email Content"]["rich_text"][0]["text"]["content"]
-            email = email_approved_job["properties"]["Email"]["email"]
-            subject_line = email_approved_job["properties"]["Email Subject Line"]["title"][0]["text"]["content"]
-
+            email = email_approved_job["properties"]["Email"]["rich_text"][0]["text"]["content"]
+            subject_line = email_approved_job["email_subject_line"]
             self.email_handler.send(email_content, email, subject_line)
 
             email_approved_job["properties"]["Status"]["select"]["name"] = "Email Sent"
             processed_jobs.append(email_approved_job)
         return processed_jobs
 
-    def process_jobs(self, jobs_database_id: Optional[str] = None):
+    def process_jobs(self, j_id: Optional[str] = None):
         """
         Main function to process jobs based on their status.
         Parameters:
         - jobs_database_id (str): ID of the Notion database. If not specified, details from the .env file will be used.
         """
         load_dotenv(find_dotenv())
-        jobs_id = jobs_database_id or os.getenv("JOBS_DATABASE_ID")
-        if jobs_id is None:
+        jobs_database_id = j_id or os.getenv("NOTION_JOBS_DATABASE_ID")
+        if jobs_database_id is None:
             raise ValueError(
-                "jobs_database_id is not provided and JOBS_DATABASE_ID is not set in environment variables."
+                "jobs_database_id is not provided and NOTION_JOBS_DATABASE_ID is not set in environment variables."
             )
-        filter = {"Status": ["Saved", "Email Ready", "Email Approved"]}
-        all_jobs = self.notion.get_pages(jobs_id, filter)
+
+        # variables: name, type, value, operation
+        all_jobs = self.notion.get_pages_by_filter(
+            database_id=jobs_database_id,
+            property_name="Email Sent",
+            property_type="checkbox",
+            property_value=False,
+            filter_operation="equals",
+        )
+
         new_jobs = self.filter_jobs_by_status(all_jobs, "Saved")
         email_ready_jobs = self.filter_jobs_by_status(all_jobs, "Email Ready")
-        email_approved_jobs = self.filter_jobs_by_status(all_jobs, "Email Approved")
+        email_approved_jobs = self.filter_jobs_by_status(all_jobs, "Approval Required")
 
-        new_jobs = self.process_new_jobs(new_jobs)
-        email_ready_jobs = self.process_email_ready_jobs(email_ready_jobs)
-        email_approved_jobs = self.process_email_approved_jobs(email_approved_jobs)
+        processed_new_jobs = self.process_new_jobs(new_jobs)
+        processed_email_ready_jobs = self.process_email_ready_jobs(email_ready_jobs)
+        processed_email_approved_jobs = self.process_email_approved_jobs(email_approved_jobs)
 
-        jobs_to_update = new_jobs + email_ready_jobs + email_approved_jobs
+        jobs_to_update = processed_new_jobs + processed_email_ready_jobs + processed_email_approved_jobs
         self.notion.update_jobs(jobs_to_update)

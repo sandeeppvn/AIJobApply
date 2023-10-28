@@ -20,7 +20,7 @@ def load_template_from_pdf(path: str, template_name: str) -> str:
         return reader.pages[0].extract_text()
 
 
-def load_templates(path: str = "documents") -> dict:
+def load_templates(path: str = "templates") -> dict:
     """Load all templates from a directory."""
     templates = {}
     for template in TEMPLATES:

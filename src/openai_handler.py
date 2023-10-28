@@ -127,7 +127,7 @@ class Openai:
                 3. Para 3: My skillset and achievements emphasizing on the matching and requirements of the job posting.
                 4. Para 4: Conclusion and excitement to apply/join the team.
             Step 8: Modify only the summary section of the resume to match the Job Description. Keep the length of the summary the same.
-            Step 9: Identify the first name from the contact details: {contact_details}
+            {f"Step 9: Identify the first name from the contact details: {contact_details}" if contact_details else "Step 9: Skip"}
             Step 10: Create email content to send to the recruiter or hiring manager. Add the job link: {job_link} as the last line of the email as reference.
             Step 11: Generate an appropriate subject line for the email. I am a job seeker who found a relevant role and is looking some advise, referral or networking
 
@@ -143,12 +143,21 @@ class Openai:
             Email:
             ```{templates["email_template"]}```
 
-            Output: A json with the keys: cover_letter, resume and email, description, email_subject_line
-            The output should be json parsable in python.
+            Output: Create a valid json object with the keys: cover_letter, resume and email, description, email_subject_line
+            Example output:
+            {{
+                "cover_letter": "Cover letter content",
+                "resume": "Resume content",
+                "email": "Email content",
+                "description": "Updated job description",
+                "email_subject_line": "Email subject line"
+            }}
         """
         try:
-            response = json.loads(self.query_prompt(prompt))
-            response["description"] = description
+            raw_response = self.query_prompt(prompt)
+            # Remove all newlines
+            response = json.loads(raw_response)
+            # response["description"] = description
             return response
         except json.JSONDecodeError:
             logging.error("Error decoding JSON from OpenAI response.")

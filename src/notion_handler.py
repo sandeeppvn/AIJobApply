@@ -1,6 +1,9 @@
+import json
 import logging
-import os
 import time
+from pprint import pprint
+from urllib import response
+from venv import create
 
 import requests
 from dotenv import find_dotenv, load_dotenv
@@ -30,32 +33,6 @@ class Notion:
         self.notion_url = self.api_key = "https://api.notion.com/v1/"
         self.headers = {**HEADERS, "Authorization": f"Bearer {notion_secret_key}"}
 
-    def create_payload(self, filter: dict) -> dict:
-        """
-        Construct a payload for the Notion API based on a given filter.
-
-        Args:
-        - filter (dict): Filter criteria for querying the Notion database.
-
-        Returns:
-        - dict: Constructed payload.
-        """
-
-        def construct_filter(key, value):
-            """Helper function to construct the filter."""
-            if isinstance(value, list):
-                return {key: {"or": [construct_filter(key, item) for item in value]}}
-            elif isinstance(value, dict):
-                return {key: {"and": [construct_filter(sub_key, sub_value) for sub_key, sub_value in value.items()]}}
-            else:
-                return {key: {"equals": value}}
-
-        if not isinstance(filter, dict):
-            raise ValueError("The filter must be a dictionary.")
-
-        filters = [construct_filter(key, value) for key, value in filter.items()]
-        return {"filter": {"and": filters}} if len(filters) > 1 else {"filter": filters[0]}
-
     def _send_request(self, method, endpoint, json_data):
         """
         Send requests to the Notion API and handle responses.
@@ -81,7 +58,17 @@ class Notion:
 
         return response_data
 
-    def get_pages(self, database_id: str, filter: dict) -> dict:
+    def create_payload_for_query(self, **kwargs) -> dict:
+        payload_dict = {
+            "filter": {
+                "property": kwargs["property_name"],
+                kwargs["property_type"]: {kwargs["filter_operation"]: kwargs["property_value"]},
+            }
+        }
+
+        return payload_dict
+
+    def get_pages_by_filter(self, **kwargs) -> dict:
         """
         Query a Notion database based on a given filter.
 
@@ -92,23 +79,10 @@ class Notion:
         Returns:
         - dict: Result of the query.
         """
-        payload = self.create_payload(filter)
-        endpoint = f"databases/{database_id}/query"
-        return self._send_request("POST", endpoint, payload)
-
-    def create_pages(self, database_id: str, properties: dict) -> dict:
-        """
-        Create records in a Notion database.
-
-        Args:
-        - database_id (str): ID of the Notion database.
-        - properties (dict): Properties for the new record.
-
-        Returns:
-        - dict: Created record data.
-        """
-        payload = {"parent": {"database_id": database_id}, "properties": properties}
-        return self._send_request("POST", "pages/", payload)
+        payload = self.create_payload_for_query(**kwargs)
+        endpoint = f"databases/{kwargs['database_id']}/query"
+        response = self._send_request("POST", endpoint, payload)
+        return response["results"]
 
     def update_page(self, record_id: str, properties: dict, parent=None) -> dict:
         """
@@ -122,7 +96,7 @@ class Notion:
         Returns:
         - dict: Updated record data.
         """
-        payload = {"properties": properties}
+        payload = self.create_payload_for_update(properties)
         if parent:
             payload["parent"] = parent
         endpoint = f"pages/{record_id}"
@@ -139,3 +113,55 @@ class Notion:
             self.update_page(record_id=job["id"], properties=job["properties"])
             # TODO: Replace with a better rate-limiting strategy like exponential backoff
             time.sleep(0.5)
+
+    def property_type_format(self, property_type: str, property_value: str) -> dict:
+        """Helper function to create a property object."""
+        if property_type == "rich_text":
+            return {"rich_text": [{"text": {"content": property_value}}]}
+        elif property_type == "title":
+            return {"title": [{"text": {"content": property_value}}]}
+        elif property_type == "select":
+            return {"select": {"name": property_value}}
+        elif property_type == "email":
+            return {"email": property_value}
+        else:
+            raise ValueError(f"Invalid property type: {property_type}")
+
+    def create_payload_for_update(self, properties: dict) -> dict:
+        """
+        Modify the payload for a Notion API request.
+
+        Args:
+        - properties (dict): Properties to be added to the payload.
+
+        Returns:
+        - dict: Modified payload.
+        """
+        selected_properties = {
+            "Description": "rich_text",
+            "Email": "rich_text",
+            "Email Content": "rich_text",
+            "Resume": "rich_text",
+            "Cover Letter": "rich_text",
+            "Contact Details": "rich_text",
+            "Position": "select",
+            "Company Name": "title",
+            "Status": "select",
+        }
+
+        new_properties = {}
+        for key, value in properties.items():
+            if key in selected_properties:
+                property_type = selected_properties[key]
+                if value[property_type] and isinstance(value[property_type], dict) and value[property_type]["name"]:
+                    new_properties[key] = self.property_type_format(property_type, value[property_type]["name"])
+                elif (
+                    value[property_type]
+                    and isinstance(value[property_type], list)
+                    and value[property_type][0]["text"]["content"]
+                ):
+                    new_properties[key] = self.property_type_format(
+                        property_type, value[property_type][0]["text"]["content"]
+                    )
+
+        return {"properties": new_properties}
