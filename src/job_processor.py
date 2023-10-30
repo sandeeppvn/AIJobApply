@@ -100,6 +100,9 @@ class JobProcessor:
         # Filter out jobs with "New Job" status
         new_jobs_df = new_jobs_df[new_jobs_df['Status'] == 'New Job']
 
+        if new_jobs_df.empty:
+            return
+
         # Identify jobs with emails and update their status
         has_email = new_jobs_df['Email'].notnull()
         new_jobs_df.loc[has_email, 'status'] = 'Email Ready'
@@ -133,14 +136,22 @@ class JobProcessor:
         
         # Create a copy of the jobs_df DataFrame
         email_required_jobs_df = self.jobs_df.copy()
+
+        # Reset Index
+        email_required_jobs_df = email_required_jobs_df.reset_index(drop=True)
+
         
         # Filter out jobs with "Email Required" status
         email_required_jobs_df = email_required_jobs_df[email_required_jobs_df['Status'] == 'Email Required']
 
         # Identify jobs with emails and update their status
         has_email = email_required_jobs_df['Email'].notnull()
-        email_required_jobs_df.loc[has_email, 'status'] = 'Email Ready'
+        # Check if atleast one value is present
 
+        if not has_email.any():
+            return
+
+        email_required_jobs_df.loc[has_email, 'status'] = 'Email Ready'
         # For jobs without emails but with contact details
         has_contact_details = email_required_jobs_df['Contact Details'].notnull() & ~has_email
 
@@ -153,6 +164,7 @@ class JobProcessor:
 
         # Update the jobs_df DataFrame in-place
         self.jobs_df.update(email_required_jobs_df)
+
 
     def process_email_ready_jobs(self):
         """
@@ -169,6 +181,9 @@ class JobProcessor:
         
         # Filter out jobs with "Email Ready" status
         email_ready_jobs_df = email_ready_jobs_df[email_ready_jobs_df['Status'] == 'Email Ready']
+
+        if email_ready_jobs_df.empty:
+            return
 
         # Generate email content, cover letter, resume, description and email subject line using OpenAI.
         email_ready_jobs_df.apply(
@@ -204,6 +219,9 @@ class JobProcessor:
         # Filter out jobs with "Email Approval Required" status
         email_approved_jobs_df = email_approved_jobs_df[email_approved_jobs_df['Status'] == 'Email Approval Required']
 
+        if email_approved_jobs_df.empty:
+            return
+
         # For each job, send email to the contact
         for index, row in email_approved_jobs_df.iterrows():
             self.email_handler.send(
@@ -231,6 +249,9 @@ class JobProcessor:
                 raise ValueError(
                     "gsheet_name is not provided and GOOGLE_SHEET_NAME is not set in environment variables."
                 )
+            
+        if self.jobs_df.empty:
+            return
         
         gsheet = self.gc.get_sheet(gsheet_name)
         gsheet.sheet1.update([self.jobs_df.columns.values.tolist()] + self.jobs_df.values.tolist())
