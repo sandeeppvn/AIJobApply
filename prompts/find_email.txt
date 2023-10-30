@@ -1,0 +1,7 @@
+Contact details for a job posting delimited by triple backticks. ```{contact_details}```
+Your goal is to find the email address from the contact details if it is present.
+Do not provide an email address if it is not present.
+The email address should be an exact match in the contact details.
+If only one email address is present, provide it.
+If no email address is present, provide an empty string.
+If multiple email addresses are present, provide only the first one

@@ -27,8 +27,8 @@ def aijobapply_cli():
     # If not specified, details from the .env file will be used
     parser.add_argument("-g", "--gmail", type=str, default=None)
     parser.add_argument("-p", "--password", type=str, default=None)
-    parser.add_argument("-n", "--notion_secret_key", type=str, default=None)
-    parser.add_argument("-j", "--jobs_database_id", type=str, default=None)
+    parser.add_argument("-c", "--credentials_file", type=str, default=None)
+    parser.add_argument("-j", "--gsheet_name", type=str, default=None)
     parser.add_argument("-o", "--openapi_key", type=str, default=None)
     parser.add_argument("-m", "--model", type=str, default=None)
 
@@ -36,11 +36,11 @@ def aijobapply_cli():
 
     # Create job processor object
     job_processor = JobProcessor(
-        args.templates_path, args.gmail, args.password, args.notion_secret_key, args.openapi_key, args.model
+        args.templates_path, args.gmail, args.password, args.credentials_file, args.openapi_key, args.model
     )
 
     # Run job application process
-    job_processor.process_jobs(args.jobs_database_id)
+    job_processor.process_jobs(args.gsheet_name)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,61 @@
+Act as a professional writer who is specialized in writing cover letters, resumes and emails.
+            You are applying for a {position} position at {company_name}.
+            Your goal is to generate a customized cover letter, resume and email for the job posting. 
+            Ensure to use simple and concise language.
+
+            Data to use and understand:
+            File 1: Read the Cover Letter Template within the triple backticks <Cover Letter Template> ```{cover_letter_template}```
+            File 2: Read the Resume Template within the triple backticks <Resume Template> ```{resume_template}```
+            File 3: Read the Email Content Template within the triple backticks <Email Content Template> ```{email_template}```
+            File 4: Read the raw job description within the triple backticks <Job Description Raw Text> ```{raw_job_description}```
+
+            Steps to follow to generate the customized content:
+            Step 1: For 'updated_job_description', parse and understand the following:
+                i) job requirements and the job role
+                ii) Hard skills : Technical skills, programming languages, Tools, etc.
+                iii) Soft skills : Communication, Teamwork, Problem solving, etc.
+                iv) Company values,mission and vision
+                v) Add the above information to  "updated_job_description" variable.
+            Step 2: For 'cover_letter', modify the cover letter template according to:
+                i) Job Description derived from Step 5
+                ii) Current content of the cover letter template
+                iii) Current content of the resume template
+                iv) Current content of the email template 
+                v) Provide the content in a text format consistent with the original cover letter, maintaining the same structure, paragraph objectives and number of words or total length of text. 
+                vi) The final paragraphs should be defined by:
+                    1. Para 1: Interest in the company, job and matching with the values and mission. Why I am interested in the role. Something specific that matches my work and the job.
+                    2. Para 2: My introduction and confidence that I can add value to the team.
+                    3. Para 3: My skillset and achievements emphasizing on the matching and requirements of the job posting.
+                    4. Para 4: Conclusion and excitement to apply/join the team.
+                vii) Don't overdo it, ensure the consistency remains with the original cover letter template. Try to retain the original information as much as possible from the resume and cover letter templates.
+                viii) Add the modified cover letter to "cover_letter" variable.
+            Step 3: For 'resume', modify the resume template according to:
+                i) Modify only the summary section of the resume to match the Job Description derived from Step 5. 
+                ii) Keep the length of the summary the same as the original resume template ensuring the same formatting is preserved.
+                iii) Add the modified resume to "resume" variable.
+            Step 4: For 'email_content', modify the email template according to:
+                i)Identify the first name from the {contact_details}
+                ii) Create email content to send to the recruiter or hiring manager. 
+                iii) Add the job link: {job_link} at the end as reference
+                iv) The email should be formal and professional.
+                v) The email should be short and concise reflecting the cover letter and resume.
+                vi) The email should be consistent with the original email template.
+                vii) Add the modified email to "email_content" variable.
+            Step 5: For 'email_subject_line',:
+                i) Generate an appropriate subject line for the email content derived from Step 9.
+                ii) In the context of I am a job seeker who found a relevant role in your company and is looking some advise, referral or networking
+                iii) The subject line should be short and concise.
+                iv) Add the subject line to "email_subject_line" variable.
+
+            Step 6: Verify all the generated content and ensure it is consistent with the original templates.
+            Step 7: Recheck for any grammatical errors and spelling mistakes and correct them.
+        
+            Output:
+            A python dictionary with the following keys and values:
+            {{
+                "cover_letter": <generated cover letter>,
+                "resume": <generated resume>,
+                "email_content": <generated email content>,
+                "updated_job_description": <updated job description>,
+                "email_subject_line": <generated email subject line>
+            }}

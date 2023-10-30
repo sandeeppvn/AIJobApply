@@ -14,7 +14,7 @@ class EmailHandler:
         content: str,
         recepient_email: str,
         subject: str = "Request for Job Networking Opportunity",
-    ) -> None:
+    ):
         """
         Send an email with the given content and subject.
 

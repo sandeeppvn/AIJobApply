@@ -161,6 +161,8 @@ cython_debug/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# Google API credentials
+google_api_credentials.json
 
 
 # PyCharm

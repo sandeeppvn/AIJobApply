@@ -1,14 +1,12 @@
 import json
 import logging
-import os
 
 import openai
-from dotenv import find_dotenv, load_dotenv
 
-from src.utils import load_templates
+from src.utils import (generate_function_description, load_prompt,
+                       load_templates)
 
 logging.basicConfig(level=logging.INFO)
-
 
 class Openai:
     def __init__(self, openapi_key: str, model: str):
@@ -19,28 +17,49 @@ class Openai:
         openai.api_key = openapi_key
         self.model = model
 
-    def query_prompt(self, prompt: str) -> str:
+    def query_prompt(self, prompt: str, function_description: list = [{}]) -> dict:
         """
         Query the OpenAI API with a given prompt.
 
         Args:
         - prompt (str): The prompt to be sent to the API.
+        - function_description (list): List of dictionaries describing the functions to be used.
 
         Returns:
-        - str: Response from the API.
+        - dict: Response from the API.
         """
         try:
             messages = [{"role": "user", "content": prompt}]
-            response = openai.ChatCompletion.create(
-                model=self.model,
-                messages=messages,
-                temperature=0,
-            )
+            if function_description:
+                response = openai.ChatCompletion.create(
+                    model=self.model,
+                    messages=messages,
+                    temperature=0,
+                    functions=function_description,
+                    function_call="auto",
+                )
+            else:
+                response = openai.Completion.create(
+                    model=self.model,
+                    messages=messages,
+                    temperature=0,
+                )
+            output = response.choices[0].message  # type: ignore
+            if output.get("function_call"):
+                function_name = output.function_call.name
+                if function_name not in ["find_email_helper", "generate_custom_contents_helper"]:
+                    raise ValueError(f"Function name {function_name} not found in the list of available functions.")
+                function_call = eval(f"self.{function_name}")
 
-            return response.choices[0].message["content"]  # type: ignore
+                function_arguments = json.loads(output.function_call.arguments)
+                output = function_call(**function_arguments)
+
+                return output
+
+            return output.content
         except Exception as e:
             logging.error(f"Error querying OpenAI API: {e}")
-            return ""
+            return {}
 
     def find_email(self, contact_details: str) -> str:
         """
@@ -52,113 +71,67 @@ class Openai:
         Returns:
         - str: Extracted email address or addresses.
         """
-        prompt = f"""
-        Contact details for a job posting delimited by triple backticks.
-        Your goal is to find the email address from the contact details if it is present.
-        Do not provide an email address if it is not present.
-        The email address should be an exact match in the contact details.
-        If only one email address is present, provide it.
-        If no email address is present, provide an empty string.
-        If multiple email addresses are present, provide them in a comma separated manner.
-        Contact details: ```{contact_details}```
-        """
-        return self.query_prompt(prompt)
+        prompt = load_prompt("find_email", contact_details=contact_details)
 
-    def get_job_description(self, description: str, position: str, company_name: str) -> str:
-        """
-        Extract key hard skills, soft skills, and formatted job description from given inputs using OpenAI.
+        function_description = generate_function_description(
+            "find_email_helper",
+            "Find email address from contact details",
+            ("email", "Email address"),
+        )
 
-        Args:
-        - description (str): The job description.
-        - position (str): The job position.
-        - company_name (str): The company name.
+        response = self.query_prompt(prompt, function_description)
+        return response["email"]
 
-        Returns:
-        - str: Formatted job description with key skills.
-        """
-        prompt = f"""
-            Act as a job seeker and you are looking at a job posting for {position} at {company_name}. \
-            Your goal is to understand the job description and find the key hard skills and soft skills. \
-            Perform the following tasks: \
-            Step 1: From the Job Description, which is delimited by triple backticks, find the job description \
-            Step 2: From the job description, find \
-                i) Hard skills: Technical skills, programming languages, Tools, etc. \
-                ii) Soft skills: Communication, Teamwork, Problem solving, etc. \
-            Step 3: Provide the job description and the key hard skills and soft skills in a well formatted manner \
-            Job Description: ```{description}```
+    def find_email_helper(self, email: str) -> dict:
+        """Parse the response from OpenAI API to match the required output format."""
+        return {"email": email}
 
-            Output: a string of the job description
-        """
-        return self.query_prompt(prompt)
-
-    def generate_custom_contents(
-        self, description: str, position: str, company_name: str, job_link: str, contact_details: str
-    ) -> dict:
+    def generate_custom_contents(self, **kwargs) -> dict:
         """
         Generate customized content for email, cover letter, and resume based on given inputs.
 
-        Args:
-        - description (str): The job description.
-        - position (str): The job position.
-        - company_name (str): The company name.
-        - job_link (str): The job link.
-        - contact_details (str): Contact details.
+        **kwargs:
+        - raw_job_description (str): Raw job description.
+        - position (str): Position name.
+        - company_name (str): Company name.
+        - job_link (str): Link to the job posting.
+
 
         Returns:
         - dict: Customized contents for email, cover letter, resume, and updated job description.
         """
         templates = load_templates()
-        prompt = f"""
-            You are applying for a {position} position at {company_name}. \
-            Your goal is to generate a customized cover letter, resume and email. \
-            The output should be in a json format with the keys: cover_letter, resume and email. \
-            All the documents should be in a well formatted manner. \
-            Act as a professional writer.
-            Step 1: Read the cover Letter <Cover Letter>
-            Step 2: Read the Job description <Job Description>
-            Step 3: Read the Resume <Resume>
-            Step 4: Read the Email <Email>
-            Step 5: Understand the job requirements, hard skills and soft skills. Ensure to capture the vision and mission of the company and the job role.
-            Step 6: Modify the cover letter to match the Job Description. Don't overdo it, ensure the consistency remains. Try to retain as much information as possible from the resume and cover letter.
-            Step 7: Provide the content in a text format consistent with the original cover letter, maintaining the same structure, paragraph objectives and number of words or total length of text. 
-                The final paragraphs should be defined by:
-                1. Para 1: Interest in the company, job and matching with the values and mission. Why I am interested in the role. Something specific that matches my work and the job.
-                2. Para 2: My introduction and confidence that I can add value to the team.
-                3. Para 3: My skillset and achievements emphasizing on the matching and requirements of the job posting.
-                4. Para 4: Conclusion and excitement to apply/join the team.
-            Step 8: Modify only the summary section of the resume to match the Job Description. Keep the length of the summary the same.
-            {f"Step 9: Identify the first name from the contact details: {contact_details}" if contact_details else "Step 9: Skip"}
-            Step 10: Create email content to send to the recruiter or hiring manager. Add the job link: {job_link} as the last line of the email as reference.
-            Step 11: Generate an appropriate subject line for the email. I am a job seeker who found a relevant role and is looking some advise, referral or networking
+        merged_kwargs = {**templates, **kwargs}
+        prompt = load_prompt(
+            prompt_name="generate_custom_contents",
+            **merged_kwargs,
+        )
 
-            Cover Letter: 
-            ```{templates["cover_letter_template"]}```
-
-            Resume:
-            ```{templates["resume_template"]}```
-
-            Job Description:
-            ```{description}```
-
-            Email:
-            ```{templates["email_template"]}```
-
-            Output: Create a valid json object with the keys: cover_letter, resume and email, description, email_subject_line
-            Example output:
-            {{
-                "cover_letter": "Cover letter content",
-                "resume": "Resume content",
-                "email": "Email content",
-                "description": "Updated job description",
-                "email_subject_line": "Email subject line"
-            }}
-        """
         try:
-            raw_response = self.query_prompt(prompt)
-            # Remove all newlines
-            response = json.loads(raw_response)
-            # response["description"] = description
-            return response
+            function_description = generate_function_description(
+                "generate_custom_contents_helper",
+                "Generate custom contents",
+                ("cover_letter", "Cover letter content"),
+                ("resume", "Resume content"),
+                ("email_content", "Email content"),
+                ("updated_job_description", "Updated job description"),
+                ("email_subject_line", "Email subject line"),
+            )
+
+            return self.query_prompt(prompt, function_description)
+
         except json.JSONDecodeError:
             logging.error("Error decoding JSON from OpenAI response.")
             return {}
+
+    def generate_custom_contents_helper(
+        self, cover_letter: str, resume: str, email_content: str, updated_job_description: str, email_subject_line: str
+    ) -> dict:
+        """Parse the response from OpenAI API to match the required output format."""
+        return {
+            "cover_letter": cover_letter,
+            "resume": resume,
+            "email_content": email_content,
+            "description": updated_job_description,
+            "email_subject_line": email_subject_line,
+        }
