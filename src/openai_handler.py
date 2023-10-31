@@ -86,10 +86,10 @@ class Openai:
         """Parse the response from OpenAI API to match the required output format."""
         return {"email": email}
 
-    def generate_custom_contents(self, **kwargs) -> dict:
+    def generate_custom_contents(self, job) -> dict:
         """
         Generate customized content for email, cover letter, and resume based on given inputs.
-
+        - job: The pandas Series containing the job information.
         **kwargs:
         - raw_job_description (str): Raw job description.
         - position (str): Position name.
@@ -100,6 +100,14 @@ class Openai:
         Returns:
         - dict: Customized contents for email, cover letter, resume, and updated job description.
         """
+
+        kwargs = {
+            "raw_job_description": job["Description"],
+            "position": job["Position"],
+            "company_name": job["Company Name"],
+            "job_link": job["Link"],
+            "contact_details": job["Contact Details"],
+        }
         templates = load_templates()
         merged_kwargs = {**templates, **kwargs}
         prompt = load_prompt(

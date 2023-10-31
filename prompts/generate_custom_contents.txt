@@ -17,7 +17,7 @@ Act as a professional writer who is specialized in writing cover letters, resume
                 iv) Company values,mission and vision
                 v) Add the above information to  "updated_job_description" variable.
             Step 2: For 'cover_letter', modify the cover letter template according to:
-                i) Job Description derived from Step 5
+                i) Job Description derived from Step 5 and the data in the template.
                 ii) Current content of the cover letter template
                 iii) Current content of the resume template
                 iv) Current content of the email template 
@@ -29,12 +29,13 @@ Act as a professional writer who is specialized in writing cover letters, resume
                     4. Para 4: Conclusion and excitement to apply/join the team.
                 vii) Don't overdo it, ensure the consistency remains with the original cover letter template. Try to retain the original information as much as possible from the resume and cover letter templates.
                 viii) Add the modified cover letter to "cover_letter" variable.
-            Step 3: For 'resume', modify the resume template according to:
-                i) Modify only the summary section of the resume to match the Job Description derived from Step 5. 
-                ii) Keep the length of the summary the same as the original resume template ensuring the same formatting is preserved.
+            Step 3: For 'resume', you need to generate only the professional summary, modify the resume template according to:
+                i) Identify and filter out only the professional summary from the resume template
+                i) Modify the filtered content to match a blended combination Job Description derived from Step 5 and the data present in the template.
+                ii) Keep the length of the summary the same as the original resume template professional summary section, ensuring the same formatting is preserved.
                 iii) Add the modified resume to "resume" variable.
             Step 4: For 'email_content', modify the email template according to:
-                i)Identify the first name from the {contact_details}
+                i) Identify the first name from the {contact_details}
                 ii) Create email content to send to the recruiter or hiring manager. 
                 iii) Add the job link: {job_link} at the end as reference
                 iv) The email should be formal and professional.
