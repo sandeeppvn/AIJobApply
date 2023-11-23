@@ -98,7 +98,7 @@ class Openai:
 
 
         Returns:
-        - dict: Customized contents for email, cover letter, resume, and updated job description.
+        - dict: Customized contents for email, cover letter, resume, updated job description, message subject line and linkedin note
         """
 
         kwargs = {
@@ -106,7 +106,7 @@ class Openai:
             "position": job["Position"],
             "company_name": job["Company Name"],
             "job_link": job["Link"],
-            "contact_details": job["Contact Details"],
+            "name": job["Name"],
         }
         templates = load_templates()
         merged_kwargs = {**templates, **kwargs}
@@ -119,27 +119,35 @@ class Openai:
             function_description = generate_function_description(
                 "generate_custom_contents_helper",
                 "Generate custom contents",
-                ("cover_letter", "Cover letter content"),
-                ("resume", "Resume content"),
-                ("email_content", "Email content"),
-                ("updated_job_description", "Updated job description"),
-                ("email_subject_line", "Email subject line"),
+                ("cover_letter", "Cover Letter Content"),
+                ("resume", "Resume Content"),
+                ("message_content", "Message Content"),
+                ("updated_job_description", "Updated Job description"),
+                ("message_subject_line", "Message Subject line"),
+                ("linkedin_note", "LinkedIn Note")
             )
-
-            return self.query_prompt(prompt, function_description)
+            value = self.query_prompt(prompt, function_description)
+            return value
 
         except json.JSONDecodeError:
             logging.error("Error decoding JSON from OpenAI response.")
             return {}
 
     def generate_custom_contents_helper(
-        self, cover_letter: str, resume: str, email_content: str, updated_job_description: str, email_subject_line: str
+        self, 
+        cover_letter: str, 
+        resume: str, 
+        message_content: str, 
+        updated_job_description: str, 
+        message_subject_line: str,
+        linkedin_note: str
     ) -> dict:
         """Parse the response from OpenAI API to match the required output format."""
         return {
-            "cover_letter": cover_letter,
-            "resume": resume,
-            "email_content": email_content,
-            "description": updated_job_description,
-            "email_subject_line": email_subject_line,
+            "Cover Letter": cover_letter,
+            "Resume": resume,
+            "Message Content": message_content,
+            "Description": updated_job_description,
+            "Message Subject": message_subject_line,
+            "LinkedIn Note": linkedin_note
         }

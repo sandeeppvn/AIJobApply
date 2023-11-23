@@ -8,7 +8,7 @@ from PyPDF2 import PdfReader
 # Setting up logger
 logger = logging.getLogger(__name__)
 
-TEMPLATES = ["cover_letter_template", "resume_template", "email_template"]
+TEMPLATES = ["cover_letter_template", "resume_template", "email_template", "linkedin_note_template"]
 
 
 def load_template_from_pdf(path: str, template_name: str) -> str:
@@ -30,7 +30,7 @@ def load_templates(path: str = "templates") -> dict[str, str]:
 
 
 def send_email(
-    email_content: str,
+    message_content: str,
     recipient_email: str,
     sender_email: str,
     sender_password: str,
@@ -46,14 +46,14 @@ def send_email(
     message["From"] = sender_email
     message["To"] = recipient_email
     message["Subject"] = subject
-    message.attach(MIMEText(email_content, "plain"))
+    message.attach(MIMEText(message_content, "plain"))
 
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, recipient_email, message.as_string())
-            logger.info(f"Email sent to {recipient_email}")
+            # server.starttls()
+            # server.login(sender_email, sender_password)
+            # server.sendmail(sender_email, recipient_email, message.as_string())
+            logger.info(f"Message sent to {recipient_email}")
     except Exception as e:
         logger.exception(f"Error occurred while sending email: {e}")
 

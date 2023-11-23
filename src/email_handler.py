@@ -19,8 +19,8 @@ class EmailHandler:
         Send an email with the given content and subject.
 
         Args:
-        - content (str): Email content.
+        - content (str): Message Content.
         - email (str): Recipient email address.
-        - subject (str): Email subject line.
+        - subject (str): Message subject line.
         """
         send_email(content, recepient_email, self.sender_email, self.sender_password, subject)

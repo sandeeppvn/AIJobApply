@@ -79,14 +79,30 @@ class GoogleAPIClass:
 
         return gsheet
     
-    def create_folder(self, folder_name: str):
+    def get_folder_id(self, folder_name: str) -> str:
         """
-        Create a folder in Google Drive
+        Get the folder id of the specified folder
         """
-        # Create a folder in Google Drive
+        # Get the folder id of the specified folder
+        folder_id = self.google_drive_service.files().list(q=f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'").execute().get('files')[0].get('id')
+
+        return folder_id
+    
+    def create_folder(self, folder_name: str, parent_folder_id: str):
+        """
+        Create a folder in Google Drive in the Jobs folder
+        """
+
+        # folder_name = "Jobs"
+        # folder_id = self.get_folder_id(folder_name)
+
+        folder_id = '1lDLO1Es0iLQfavaDRaLHU3xw3TbHpOpJ'
+        # Create a folder in Google Drive under the Jobs folder
+        # folder_name = folder_name.replace(" ", "_").replace("/", "_").replace("\\", "_").replace(".", "_").replace(":", "_").replace("*", "_").replace("?", "_").replace("\"", "_").replace("<", "_").replace(">", "_").replace("|", "_").replace('(',"_").replace(')',"_").replace("-","_")
         file_metadata = {
             'name': folder_name,
-            'mimeType': 'application/vnd.google-apps.folder'
+            'mimeType': 'application/vnd.google-apps.folder',
+            'parents': [folder_id]
         }
 
         # Create the folder if it doesn't exist
@@ -94,13 +110,17 @@ class GoogleAPIClass:
 
         return folder.get('id')
     
-    def upload_file(self, content: str, file_name: str, folder_id: str):
+    def upload_file(self, content: str, file_name: str, folder_id: str, folder_name: str):
         """
         Create a temporary file and upload it to Google Drive
         """
         try:
+
+            # Remove spaces and special characters from folder_name to make it a valid folder name
+            # folder_name = folder_name.replace(" ", "_").replace("/", "_").replace("\\", "_").replace(".", "_").replace(":", "_").replace("*", "_").replace("?", "_").replace("\"", "_").replace("<", "_").replace(">", "_").replace("|", "_").replace('(',"_").replace(')',"_").replace("-","_")
+
             # Create a temporary file
-            with open(file_name, 'w') as f:
+            with open('Jobs/' + folder_name + '/' + file_name, 'w') as f:
                 f.write(content)
 
             # Upload the file to Google Drive
@@ -108,15 +128,19 @@ class GoogleAPIClass:
                 'name': file_name,
                 'parents': [folder_id]
             }
-            media = MediaFileUpload(file_name)
+            media = MediaFileUpload(
+                file_name,
+                mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+                resumable=True
+            )
             file = self.google_drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
         except errors.HttpError as e:
             print(f"Error uploading file to Google Drive: {e}")
 
-        finally:
-            if os.path.exists(file_name):
-                # Delete the temporary file
-                os.remove(file_name)
+        # finally:
+            # if os.path.exists(file_name):
+            #     # Delete the temporary file
+            #     os.remove(file_name)
 
 
         

@@ -34,6 +34,8 @@ def aijobapply_cli():
 
     args = parser.parse_args()
 
+    args.password = "PVNSandeep#0708"
+
     # Create job processor object
     job_processor = JobProcessor(
         args.templates_path, args.gmail, args.password, args.credentials_file, args.openapi_key, args.model
