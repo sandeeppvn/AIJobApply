@@ -8,6 +8,7 @@ Automate your job application process using AI, Google Sheets, and Email service
 - [Features](#features)
 - [Prerequisites](#prerequisites)
 - [Google Sheets Setup](#google-sheets-setup)
+- [Adding a Job](#adding-a-job)
 - [Google API Credentials with OAuth 2.0](#google-api-credentials-with-oauth-20)
 - [OpenAI API Setup](#openai-api-setup)
 - [Project Structure](#project-structure)
@@ -48,13 +49,16 @@ Automate your job application process using AI, Google Sheets, and Email service
 - OpenAI GPT API access.
 - Google API credentials.
 
+## Adding a Job
+
+A job can be added to the google sheet either manually or
+you can use the RPI tool provided by Bardeen. This tool allows for a streamlined process of adding job listings through automation. For detailed instructions on how to use this tool, refer to the following Bardeen playbook: [LinkedIn Autobook](https://www.bardeen.ai/playbook/community/LinkedIn-5MfNwY4EcZLeK8GqTj).
+
 ## Google Sheets Setup
 
-To use `AIJobApply`, you need to set up a Google Sheet with specific columns for job details. Here's how to do it:
+For setting up your job application data, AIJobApply utilizes Google Sheets. To get started quickly, you can use our pre-defined template. Access the Google Sheets template here: [AIJobApply Google Sheets Template](<https://docs.google.com/spreadsheets/d/1BQZXJg6gOo1LbHZPa-0wgOvPC1_yl8piH_L4TY5rL-Q/edit?usp=sharing>).
 
-1. **Create a New Google Sheet**: Open Google Sheets and create a new spreadsheet.
-2. **Add Columns**: Set up columns for job details, such as 'Company Name', 'Position', 'Status', etc.
-3. **Share the Sheet**: Share the sheet with the email address associated with your Google API credentials.
+Ensure that you follow the structure of the template to avoid any issues with data processing in AIJobApply.
 
 ## Google API Credentials with OAuth 2.0
 
