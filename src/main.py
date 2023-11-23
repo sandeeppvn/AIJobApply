@@ -5,7 +5,7 @@ cwd = os.getcwd()
 os.environ["PYTHONPATH"] = cwd
 
 
-from src.job_processor import JobProcessor
+from job_processor import JobProcessor
 
 
 def aijobapply_cli():

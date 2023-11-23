@@ -7,9 +7,9 @@ from dotenv import find_dotenv, load_dotenv
 # from pandarallel import pandarallel
 from tqdm import tqdm
 
-from src.email_handler import EmailHandler
-from src.google_api_handler import GoogleAPIClass
-from src.openai_handler import Openai
+from email_handler import EmailHandler
+from google_api_handler import GoogleAPIClass
+from openai_handler import Openai
 
 # pandarallel.initialize()
 

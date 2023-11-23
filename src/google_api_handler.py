@@ -11,7 +11,6 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient import errors
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-from oauth2client.service_account import ServiceAccountCredentials
 
 
 class GoogleAPIClass:
@@ -35,11 +34,12 @@ class GoogleAPIClass:
         Authenticate service account credentials for OAuth2
         """
         # Authenticate service account for Google Drive API
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_file, scopes=SCOPES) # type: ignore
-        self.google_drive_service = build('drive', 'v3', credentials=credentials)
+        # credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_file, scopes=SCOPES) # type: ignore
+        # self.google_drive_service = build('drive', 'v3', credentials=credentials)
 
-        # Authenticate service account for GSpread API
-        self.gspread_service = gspread.service_account(credentials_file)
+        # # Authenticate service account for GSpread API
+        # self.gspread_service = gspread.service_account(credentials_file)
+        pass
 
     def authenticate_user_account(self, credentials_file: Path, SCOPES: list):
         """

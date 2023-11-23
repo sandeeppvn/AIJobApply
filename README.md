@@ -1,22 +1,30 @@
 # AIJobApply
 
-Automate your job application process using AI, Notion, and Email services.
+Automate your job application process using AI, Google Sheets, and Email services.
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Google Sheets Setup](#google-sheets-setup)
+- [Google API Credentials with OAuth 2.0](#google-api-credentials-with-oauth-20)
+- [OpenAI API Setup](#openai-api-setup)
 - [Project Structure](#project-structure)
-  - [Core Modules](#core-modules)
-  - [Documents](#documents)
-  - [Additional Directories](#additional-directories)
-- [Dependencies](#dependencies)
-- [Getting Started](#getting-started)
-- [Contributing](#contributing)
-- [License](#license)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
 
 ## Overview
 
-`AIJobApply` is designed to simplify and automate the job application process using cutting-edge technologies and services.
+`AIJobApply` simplifies and automates the job application process using cutting-edge technologies like OpenAI's GPT, Google Sheets for job management, and automated email services.
+
+## Features
+
+- **Automated Message Generation**: Uses OpenAI's GPT API to customize application messages.
+- **Google Sheets Integration**: Manages job details and status updates.
+- **Email Integration**: Sends out emails with customized messages.
+- **Command-Line Interface**: Easy-to-use CLI for managing the application process.
 
 ## Project Structure
 
@@ -25,82 +33,91 @@ Automate your job application process using AI, Notion, and Email services.
 - **`main.py`**: Entry point for the program. Triggers the job application process.
 - **`job_processor.py`**: Manages job processing, filtering, and updating.
 - **`email_handler.py`**: Handles email functionalities.
-- **`notion_handler.py`**: Interacts with Notion databases.
+- **`google_api_handler.py`**: Interacts with Google APIs.
 - **`openai_handler.py`**: Facilitates interactions with the OpenAI API.
-- **`utils.py`**: Provides utility functions for reading templates and sending emails.
-
-### Documents
-
-Templates used for job applications:
-
-- **Cover Letter**: `cover_letter_template.pdf`
-- **Resume**: `resume_template.pdf`
-- **Email**: `email_template.pdf`
+- **`utils.py`**: Provides utility functions.
 
 ### Additional Directories
 
 - **`tests`**: Contains unit tests.
-- **`legacy`**: Older versions or deprecated code.
+- **`templates`**: Job application templates.
 
-## Dependencies
+## Prerequisites
 
-- **ConfigParser**: Configuration file parser.
-- **mock**: Mock object library.
-- **OpenAI**: OpenAI API client.
-- **PyPDF2**: PDF manipulation.
-- **pytest**: Testing framework.
-- **python-dotenv**: Environment variable management.
-- **tqdm**: Progress bars.
-- **click**: Command line interface creation.
-- **requests**: HTTP requests.
+- Python 3.6 or higher.
+- OpenAI GPT API access.
+- Google API credentials.
 
-## Getting Started
+## Google Sheets Setup
 
-Follow these steps to install and use `AIJobApply`:
+To use `AIJobApply`, you need to set up a Google Sheet with specific columns for job details. Here's how to do it:
 
-### Download
+1. **Create a New Google Sheet**: Open Google Sheets and create a new spreadsheet.
+2. **Add Columns**: Set up columns for job details, such as 'Company Name', 'Position', 'Status', etc.
+3. **Share the Sheet**: Share the sheet with the email address associated with your Google API credentials.
 
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/sandeeppvn/AIJobApply.git
-    ```
-2. Navigate to the project directory:
-    ```bash
-    cd AIJobApply
-    ```
+## Google API Credentials with OAuth 2.0
 
-### Configuration
+To interact with Google Sheets from the application, you'll need to set up OAuth 2.0 credentials, which allow the application to access your Google Sheets on your behalf:
 
-3. **Environment Variables**:
-    - Rename the `.env.example` file (if it exists) to `.env`.
-    - Open the `.env` file and modify the environment variables with your credentials and settings. For example:
-        ```env
-        NOTION_API_KEY=YOUR_NOTION_API_KEY
-        OPENAI_API_KEY=YOUR_OPENAI_API_KEY
-        GMAIL_ADDRESS=YOUR_GMAIL_ADDRESS
-        GMAIL_PASSWORD=YOUR_GMAIL_PASSWORD
-        ```
-        (No spaces around the =, dont use quotes)
-4. **Modify Templates**:
-    - Navigate to the `documents` directory.
-    - Modify the template files as per your requirements:
-        - `cover_letter_template.pdf`: Update with your preferred cover letter format.
-        - `resume_template.pdf`: Replace with your resume template.
-        - `email_template.pdf`: Adjust the email format to your liking.
+1. **Google Cloud Console**: Visit the [Google Cloud Console](https://console.cloud.google.com/).
+2. **Create a New Project**: If you haven’t already, create a new project.
+3. **Enable Google Sheets API**: In your project, navigate to 'APIs & Services' > 'Dashboard' and enable the Google Sheets API.
+4. **Configure OAuth Consent Screen**:
+   - Go to 'OAuth consent screen' and select an appropriate user type (usually 'External').
+   - Fill in the necessary details like Application name, User support email, and Developer contact information.
+   - Add the scopes for the Google Sheets API (e.g., `https://www.googleapis.com/auth/spreadsheets`).
+5. **Create OAuth 2.0 Credentials**:
+   - Go to 'Credentials' and click 'Create Credentials'.
+   - Choose 'OAuth client ID'.
+   - For the application type, select 'Desktop app' or another appropriate type.
+   - Name your OAuth 2.0 client and click 'Create'.
+6. **Download the Credentials**:
+   - Once your OAuth client is created, click the download button to download the JSON file containing your client ID and client secret.
+   - This file is used by your application to authenticate via OAuth 2.0.
+
+7. **Using the Credentials in AIJobApply**:
+   - Store your downloaded JSON file securely.
+   - When you run the AIJobApply application for the first time, it will prompt you to authorize access to your Google Sheets. Follow the instructions to complete the OAuth flow.
+
+Remember to never share your OAuth credentials publicly.
+
+## OpenAI API Setup
+
+To utilize the OpenAI GPT API for message generation, follow these steps to obtain an API key:
+
+1. **OpenAI Account**: If you don't already have an OpenAI account, sign up at [OpenAI](https://openai.com/).
+2. **API Access**: Once logged in, navigate to the API section.
+3. **Create an API Key**: Follow the instructions to create a new API key.
+4. **Secure the API Key**: Store your API key securely. It's recommended to use environment variables for accessing the API key in your application.
 
 
-    
-5. Install the project as a package in editable mode:
-    ```bash
-    pip install -e .
-    ```
-    
-    ```
+## Installation
 
-### Usage
+Clone the repository:
 
-Once installed and configured, you can run the AI job application process from the command line using:
-    ```bash
-    aijobapply
-    ```
+```bash
+git clone https://github.com/your-repository/AIJobApply.git
+cd AIJobApply
+```
 
+Install the package:
+
+```bash
+pip install .
+```
+
+## Configuration
+
+Set up environment variables for API keys and credentials in the .env file. 
+
+Modify templates in the templates directory as per your requirements.
+
+## Usage
+
+After installation, the package provides a CLI. Run the application with:
+```bash
+aijobapply --templates_path "path/to/templates" --gsheet_name "Your Google Sheet Name"
+```
+
+Additional command line arguments are available. Use --help to see all options.

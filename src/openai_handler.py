@@ -3,8 +3,7 @@ import logging
 
 import openai
 
-from src.utils import (generate_function_description, load_prompt,
-                       load_templates)
+from utils import generate_function_description, load_prompt, load_templates
 
 logging.basicConfig(level=logging.INFO)
 

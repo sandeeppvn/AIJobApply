@@ -1,4 +1,4 @@
-from src.utils import send_email
+from utils import send_email
 
 
 class EmailHandler:
