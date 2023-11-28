@@ -66,7 +66,7 @@ To interact with Google Sheets from the application, you'll need to set up OAuth
 
 1. **Google Cloud Console**: Visit the [Google Cloud Console](https://console.cloud.google.com/).
 2. **Create a New Project**: If you haven’t already, create a new project.
-3. **Enable Google Sheets API**: In your project, navigate to 'APIs & Services' > 'Dashboard' and enable the Google Sheets API.
+3. **Enable Google Sheets API**: In your project, navigate to 'APIs & Services' > 'Dashboard' and enable the Google Sheets API and the Google Drive API
 4. **Configure OAuth Consent Screen**:
    - Go to 'OAuth consent screen' and select an appropriate user type (usually 'External').
    - Fill in the necessary details like Application name, User support email, and Developer contact information.
