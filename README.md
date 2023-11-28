@@ -98,6 +98,13 @@ To utilize the OpenAI GPT API for message generation, follow these steps to obta
 
 ## Installation
 
+Create a Python virtual environment:
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+
 Clone the repository:
 
 ```bash
@@ -108,8 +115,10 @@ cd AIJobApply
 Install the package:
 
 ```bash
-pip install .
+pip install -e .
 ```
+
+Add to PATH variable if necessary.
 
 ## Configuration
 
