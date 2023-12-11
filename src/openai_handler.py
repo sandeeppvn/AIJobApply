@@ -56,7 +56,7 @@ class OpenAIConnectorClass:
 
                 return output
 
-            return output.content
+            return output["content"]
         except Exception as e:
             logging.error(f"Error querying OpenAI API: {e}")
             return {}
