@@ -136,7 +136,7 @@ class JobProcessor:
         from src.openai_handler import OpenAIConnectorClass
         openai_handler = OpenAIConnectorClass(
             openapi_key=self.openai_api_key,
-            openai_url=self.openapi_url,
+            openai_url=self.openai_url,
             openai_model=self.openai_model,
         )
 

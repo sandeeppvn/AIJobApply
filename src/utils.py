@@ -123,7 +123,7 @@ def create_job_folder(job:pd.Series, destination:str = "job_applications"):
         with open(f"{job_folder}/{template_name}.docx", "w") as f:
             f.write(template_content)
 
-def validate_argments(**kwargs) -> dict:
+def validate_argments(args) -> dict:
     """
     Validate the arguments passed to the CLI. 
     Check if all arguments are present and valid either from the CLI or as an environment variable.
@@ -137,6 +137,7 @@ def validate_argments(**kwargs) -> dict:
         "GMAIL_PASSWORD": "Password to gmail account",
         "GOOGLE_API_CREDENTIALS_FILE": "Path to the credentials file for google api",
         "GOOGLE_SHEET_NAME": "Name of the google sheet to read jobs from",
+        "OPENAI_URL": "Openai url",
         "OPENAI_API_KEY": "Openai api key",
         "OPENAI_MODEL": "Openai model to use",
         "CHROMEDRIVER_PATH": "Path to the selenium driver",
@@ -152,14 +153,11 @@ def validate_argments(**kwargs) -> dict:
     
     # Check if all required arguments are present
     for arg_name, arg_description in required_args.items():
-        # Check if the argument is present in the kwargs
-        if arg_name in kwargs and kwargs[arg_name] is not None:
-            validated_args[arg_name] = kwargs[arg_name]
-        # Check if the argument is present as an environment variable
-        elif os.getenv(arg_name):
-            validated_args[arg_name] = os.getenv(arg_name)
-        # If the argument is not present, raise an error
+        if getattr(args, arg_name) is None:
+            if os.getenv(arg_name):
+                validated_args[arg_name] = os.getenv(arg_name)
+            else:
+                raise ValueError(f"Argument {arg_name} not found. Please provide {arg_description} either as a CLI argument or as an environment variable.")
         else:
-            raise ValueError(f"Missing required argument: {arg_name} ({arg_description})")
-
+            validated_args[arg_name] = getattr(args, arg_name)
     return validated_args
