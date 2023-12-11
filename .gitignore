@@ -173,3 +173,6 @@ cython_debug/
 
 # Job Applications
 job_applications/
+
+# .env file
+.env
