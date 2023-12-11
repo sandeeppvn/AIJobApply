@@ -132,7 +132,7 @@ pip install aijobapply
 
 ### Install from Source
 ```bash
-git clone https://github.com/your-repository/AIJobApply.git
+git clone https://github.com/sandeeppvn/AIJobApply.git
 cd AIJobApply
 pip install .
 ```

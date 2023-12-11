@@ -27,7 +27,7 @@ dependencies = [
 homepage =  "https://github.com/sandeeppvn/AIJobApply"
 
 [project.scripts]
-aijobapply = "main:aijobapply_cli"
+aijobapply = "src.__main__:aijobapply_cli"
 
 
 
