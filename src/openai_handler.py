@@ -9,13 +9,20 @@ from src.utils import (generate_function_description, load_prompt,
 logging.basicConfig(level=logging.INFO)
 
 class OpenAIConnectorClass:
-    def __init__(self, openapi_key: str, model: str):
+    def __init__(self, openapi_key: str, openai_url: str, model: str) -> None:
         """
         Initialize Openai object and set API key.
+
+        Args:
+        - openapi_key (str): OpenAI API key.
+        - openai_url (str): OpenAI API URL.
+        - model (str): OpenAI model to use.
         """
 
         openai.api_key = openapi_key
+        openai.api_base = openai_url
         self.model = model
+
 
     def query_prompt(self, prompt: str, function_description: list = [{}]) -> dict:
         """

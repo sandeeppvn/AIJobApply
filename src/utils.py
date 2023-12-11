@@ -2,6 +2,7 @@ import logging
 import os
 
 import pandas as pd
+from dotenv import find_dotenv, load_dotenv
 from PyPDF2 import PdfReader
 
 # Setting up logger
@@ -116,14 +117,49 @@ def create_job_folder(job:pd.Series, destination:str = "job_applications"):
     os.makedirs(job_folder, exist_ok=True)
 
     # Save the template files to the folder as docx files
+    # TODO: Add logic to generate updated templates and save them to the folder
     templates = load_templates()
     for template_name, template_content in templates.items():
         with open(f"{job_folder}/{template_name}.docx", "w") as f:
             f.write(template_content)
 
-    # # Create a pdf file for the cover letter
-    # with open(f"{destination}/{job_folder}/cover_letter.pdf", "w") as f:
-    #     f.write(job["Cover Letter"])
+def validate_argments(**kwargs) -> dict:
+    """
+    Validate the arguments passed to the CLI. 
+    Check if all arguments are present and valid either from the CLI or as an environment variable.
+    Create a dictionary of the arguments and their updated values.
+    """
     
-    # Create a pdf file for the resume
-    pass
+    # Define the required arguments
+    required_args = {
+        "TEMPLATES_PATH": "Path to the template folder",
+        "GMAIL_ADDRESS": "Gmail address to send emails from",
+        "GMAIL_PASSWORD": "Password to gmail account",
+        "GOOGLE_API_CREDENTIALS_FILE": "Path to the credentials file for google api",
+        "GOOGLE_SHEET_NAME": "Name of the google sheet to read jobs from",
+        "OPENAI_API_KEY": "Openai api key",
+        "OPENAI_MODEL": "Openai model to use",
+        "CHROMEDRIVER_PATH": "Path to the selenium driver",
+        "LINKEDIN_USERNAME": "LinkedIn username",
+        "LINKEDIN_PASSWORD": "LinkedIn password",
+    }
+
+    # Create a dictionary to store the validated arguments
+    validated_args = {}
+
+    # If there is an environment file, load it to get the environment variables
+    load_dotenv(find_dotenv())
+    
+    # Check if all required arguments are present
+    for arg_name, arg_description in required_args.items():
+        # Check if the argument is present in the kwargs
+        if arg_name in kwargs and kwargs[arg_name] is not None:
+            validated_args[arg_name] = kwargs[arg_name]
+        # Check if the argument is present as an environment variable
+        elif os.getenv(arg_name):
+            validated_args[arg_name] = os.getenv(arg_name)
+        # If the argument is not present, raise an error
+        else:
+            raise ValueError(f"Missing required argument: {arg_name} ({arg_description})")
+
+    return validated_args

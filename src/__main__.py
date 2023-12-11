@@ -6,6 +6,7 @@ os.environ["PYTHONPATH"] = cwd
 
 
 from src.job_processor import JobProcessor
+from src.utils import validate_argments
 
 
 def aijobapply_cli():
@@ -21,30 +22,37 @@ def aijobapply_cli():
         -m --model: openai model to use
     """
     parser = argparse.ArgumentParser(description="AI Job Application CLI")
-    parser.add_argument("-t", "--templates_path", type=str, default=None, help="Path to the template folder")
-
-    # If not specified, details from the .env file will be used
-    parser.add_argument("-ga", "--gmail_address", type=str, default=None, help="Gmail address to send emails from")
-    parser.add_argument("-gp", "--gmail_password", type=str, default=None, help="Password to gmail account")
-    parser.add_argument("-c", "--credentials_file_path", type=str, default=None, help="Path to the credentials file for google api")
-    parser.add_argument("-j", "--gsheet_name", type=str, default=None, help="Name of the google sheet to read jobs from")
-    parser.add_argument("-o", "--openapi_key", type=str, default=None, help="Openai api key")
-    parser.add_argument("-m", "--model", type=str, default=None, help="Openai model to use")
-    parser.add_argument("-s", "--selenium_driver_path", type=str, default=None, help="Path to the selenium driver")
-    parser.add_argument("-lu", "--linkedin_username", type=str, default=None, help="LinkedIn username")
-    parser.add_argument("-lp", "--linkedin_password", type=str, default=None, help="LinkedIn password")
+    parser.add_argument("-t", "--TEMPLATES_PATH", type=str, default=None, help="Path to the template folder")
+    parser.add_argument("-ga", "--GMAIL_ADDRESS", type=str, default=None, help="Gmail address to send emails from")
+    parser.add_argument("-gp", "--GMAIL_PASSWORD", type=str, default=None, help="Password to gmail account")
+    parser.add_argument("-c", "--GOOGLE_API_CREDENTIALS_FILE", type=str, default=None, help="Path to the credentials file for google api")
+    parser.add_argument("-j", "--GOOGLE_SHEET_NAME", type=str, default="AIJobApply", help="Name of the google sheet to read jobs from")
+    parser.add_argument("-u", "--OPENAI_URL", type=str, default="https://api.openai.com/v1/", help="Openai url")
+    parser.add_argument("-o", "--OPENAI_API_KEY", type=str, default=None, help="Openai api key")
+    parser.add_argument("-m", "--OPENAI_MODEL", type=str, default=None, help="Openai model to use")
+    parser.add_argument("-s", "--CHROMEDRIVER_PATH", type=str, default=None, help="Path to the selenium driver")
+    parser.add_argument("-lu", "--LINKEDIN_USERNAME", type=str, default=None, help="LinkedIn username")
+    parser.add_argument("-lp", "--LINKEDIN_PASSWORD", type=str, default=None, help="LinkedIn password")
 
     args = parser.parse_args()
 
+    #Validate arguments
+    validated_args = validate_argments(args)
+
+
     # Create job processor object
     job_processor = JobProcessor(
-        gmail_address=args.gmail_address, gmail_password=args.gmail_password, 
-        credentials_file=args.credentials_file_path,
-        openapi_key=args.openapi_key, model=args.model,
-        selenium_driver_path=args.selenium_driver_path,
-        linkedin_username=args.linkedin_username, linkedin_password=args.linkedin_password,
-        google_sheet_name=args.gsheet_name
-        
+        templates_path=validated_args["TEMPLATES_PATH"],
+        gmail_address=validated_args["GMAIL_ADDRESS"],
+        gmail_password=validated_args["GMAIL_PASSWORD"],
+        google_api_credentials_file=validated_args["GOOGLE_API_CREDENTIALS_FILE"],
+        google_sheet_name=validated_args["GOOGLE_SHEET_NAME"],
+        openai_url=validated_args["OPENAI_URL"],
+        openai_api_key=validated_args["OPENAI_API_KEY"],
+        openai_model=validated_args["OPENAI_MODEL"],
+        chromedriver_path=validated_args["CHROMEDRIVER_PATH"],
+        linkedin_username=validated_args["LINKEDIN_USERNAME"],
+        linkedin_password=validated_args["LINKEDIN_PASSWORD"],
     )
     job_processor.process_jobs()
 

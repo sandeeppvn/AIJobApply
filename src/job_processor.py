@@ -3,7 +3,6 @@ import os
 from typing import Optional
 
 import pandas as pd
-from dotenv import find_dotenv, load_dotenv
 from tqdm import tqdm
 
 from src.google_sheets_handler import GoogleSheetsHandler
@@ -17,30 +16,28 @@ class JobProcessor:
     """
     def __init__(
         self,
-        gmail_address: Optional[str] = None,
-        gmail_password: Optional[str] = None,
-        credentials_file: Optional[str] = None,
-        openapi_key: Optional[str] = None,
-        model: Optional[str] = None,
-        selenium_driver_path: Optional[str] = None,
-        linkedin_username: Optional[str] = None,
-        linkedin_password: Optional[str] = None,
-        google_sheet_name: Optional[str] = None,
+        **kwargs,
     ):
-        load_dotenv(find_dotenv())
-        self.jobs_df = pd.DataFrame()
-        self.gmail_address = gmail_address or os.getenv("GMAIL_ADDRESS")
-        self.gmail_password = gmail_password or os.getenv("GMAIL_PASSWORD")
-        self.credentials_file = credentials_file or os.getenv("GOOGLE_API_CREDENTIALS_FILE") or "credentials/google_credentials.json"
-        self.openapi_key = openapi_key or os.getenv("OPENAI_API_KEY")
-        self.model = model or os.getenv("OPENAI_MODEL") or "gpt-3.5-turbo-0613"
-        self.selenium_driver_path = selenium_driver_path or os.getenv("CHROMEDRIVER_PATH") or "chromedriver/chromedriver.exe"
-        self.linkedin_username = linkedin_username or os.getenv("LINKEDIN_USERNAME")
-        self.linkedin_password = linkedin_password or os.getenv("LINKEDIN_PASSWORD")
-        self.google_sheet_name = google_sheet_name or os.getenv("GOOGLE_SHEET_NAME") or "AIJobApply"
+        """
+        Initialize JobProcessor class.
+        Args:
+        - templates_path (str): Path to the template folder.
+        - gmail_address (str): Gmail address to send emails from.
+        - gmail_password (str): Password to gmail account.
+        - google_api_credentials_file (str): Path to the credentials file for google api.
+        - google_sheet_name (str): Name of the google sheet to read jobs from.
+        - openai_url (str): Openai url.
+        - openai_api_key (str): Openai api key.
+        - openai_model (str): Openai model to use.
+        - chromedriver_path (str): Path to the selenium driver.
+        - linkedin_username (str): LinkedIn username.
+        - linkedin_password (str): LinkedIn password.
+        """
 
-        self.gc = GoogleSheetsHandler(self.credentials_file, self.google_sheet_name)
-        
+        self.jobs_df = pd.DataFrame()
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        self.gc = GoogleSheetsHandler(self.google_api_credentials_file, self.google_sheet_name)
         
 
     def process_jobs(self):
@@ -137,7 +134,12 @@ class JobProcessor:
             jobs_df = jobs_df[jobs_df['Status'] != 'Content Generated']
 
         from src.openai_handler import OpenAIConnectorClass
-        openai_handler = OpenAIConnectorClass(self.openapi_key, self.model) # type: ignore
+        openai_handler = OpenAIConnectorClass(
+            openapi_key=self.openai_api_key,
+            openai_url=self.openapi_url,
+            openai_model=self.openai_model,
+        )
+
         def generate_custom_contents_wrapper(job: pd.Series, openai_handler: OpenAIConnectorClass) -> pd.Series:
             try:
                 generated_contents = openai_handler.generate_custom_contents(job)
@@ -186,11 +188,6 @@ class JobProcessor:
             - job (Series): Pandas Series containing the details of a job.
             - email_handler (EmailHandler): Instance of EmailHandler.
         """
-        if self.gmail_address is None:
-            raise ValueError("Gmail address not provided.")
-        if self.gmail_password is None:
-            raise ValueError("Gmail password not provided.")
-
         from src.email_handler import EmailHandler
         email_handler = EmailHandler(self.gmail_address, self.gmail_password)
         def send_email_wrapper(job: pd.Series, email_handler: EmailHandler) -> pd.Series:
@@ -218,15 +215,9 @@ class JobProcessor:
             - job (Series): Pandas Series containing the details of a job.
             - linkedin_handler (LinkedInConnectorClass): Instance of LinkedInConnectorClass.
         """        
-        if self.selenium_driver_path is None:
-            raise ValueError("Selenium driver path not provided.")
-        if self.linkedin_username is None:
-            raise ValueError("LinkedIn username not provided.")
-        if self.linkedin_password is None:
-            raise ValueError("LinkedIn password not provided.")
         
         from src.linkedin_handler import LinkedInConnectorClass
-        linkedin_handler = LinkedInConnectorClass(self.selenium_driver_path, self.linkedin_username, self.linkedin_password)
+        linkedin_handler = LinkedInConnectorClass(self.chromedriver_path, self.linkedin_username, self.linkedin_password)
         def send_linkedin_connection_with_message(job: pd.Series, linkedin_handler: LinkedInConnectorClass) -> pd.Series:
             try:
                 linkedin_handler.send_connection_request(
