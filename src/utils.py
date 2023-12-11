@@ -1,8 +1,7 @@
 import logging
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import os
 
+import pandas as pd
 from PyPDF2 import PdfReader
 
 # Setting up logger
@@ -27,35 +26,6 @@ def load_templates(path: str = "templates") -> dict[str, str]:
         except Exception as e:
             logger.exception(f"Error occurred while loading {template}: {e}")
     return templates
-
-
-def send_email(
-    message_content: str,
-    recipient_email: str,
-    sender_email: str,
-    sender_password: str,
-    subject: str,
-) -> None:
-    """Send an email using Gmail."""
-
-    if not sender_email or not sender_password:
-        logger.error("Gmail credentials not found")
-        return
-
-    message = MIMEMultipart()
-    message["From"] = sender_email
-    message["To"] = recipient_email
-    message["Subject"] = subject
-    message.attach(MIMEText(message_content, "plain"))
-
-    try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            # server.starttls()
-            # server.login(sender_email, sender_password)
-            # server.sendmail(sender_email, recipient_email, message.as_string())
-            logger.info(f"Message sent to {recipient_email}")
-    except Exception as e:
-        logger.exception(f"Error occurred while sending email: {e}")
 
 
 def generate_function_description(name: str, description: str, *args: tuple[str, str]) -> list[dict]:
@@ -126,3 +96,26 @@ def create_rich_text_dict(content: str) -> dict:
         "type": "text",
         "text": {"content": content},
     }
+
+
+def create_job_folder(job:pd.Series, destination:str = "job_applications"):
+    """
+    Create a folder for the job application process.
+    Add relevant files to the folder.
+    """
+    # Create a folder for the job application
+    job_folder = f"{destination}/{job['Company Name']}_{job['Position']}"
+    os.makedirs(job_folder, exist_ok=True)
+
+    # Save the template files to the folder as docx files
+    templates = load_templates()
+    for template_name, template_content in templates.items():
+        with open(f"{job_folder}/{template_name}.docx", "w") as f:
+            f.write(template_content)
+
+    # # Create a pdf file for the cover letter
+    # with open(f"{destination}/{job_folder}/cover_letter.pdf", "w") as f:
+    #     f.write(job["Cover Letter"])
+    
+    # Create a pdf file for the resume
+    pass

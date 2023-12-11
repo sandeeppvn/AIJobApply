@@ -3,11 +3,12 @@ import logging
 
 import openai
 
-from utils import generate_function_description, load_prompt, load_templates
+from src.utils import (generate_function_description, load_prompt,
+                       load_templates)
 
 logging.basicConfig(level=logging.INFO)
 
-class Openai:
+class OpenAIConnectorClass:
     def __init__(self, openapi_key: str, model: str):
         """
         Initialize Openai object and set API key.
@@ -46,7 +47,7 @@ class Openai:
             output = response.choices[0].message  # type: ignore
             if output.get("function_call"):
                 function_name = output.function_call.name
-                if function_name not in ["find_email_helper", "generate_custom_contents_helper"]:
+                if function_name != "generate_custom_contents_helper":
                     raise ValueError(f"Function name {function_name} not found in the list of available functions.")
                 function_call = eval(f"self.{function_name}")
 
@@ -59,31 +60,6 @@ class Openai:
         except Exception as e:
             logging.error(f"Error querying OpenAI API: {e}")
             return {}
-
-    def find_email(self, contact_details: str) -> str:
-        """
-        Extract email address from contact details using OpenAI.
-
-        Args:
-        - contact_details (str): The provided contact details.
-
-        Returns:
-        - str: Extracted email address or addresses.
-        """
-        prompt = load_prompt("find_email", contact_details=contact_details)
-
-        function_description = generate_function_description(
-            "find_email_helper",
-            "Find email address from contact details",
-            ("email", "Email address"),
-        )
-
-        response = self.query_prompt(prompt, function_description)
-        return response["email"]
-
-    def find_email_helper(self, email: str) -> dict:
-        """Parse the response from OpenAI API to match the required output format."""
-        return {"email": email}
 
     def generate_custom_contents(self, job) -> dict:
         """

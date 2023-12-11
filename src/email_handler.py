@@ -1,5 +1,10 @@
-from utils import send_email
+import logging
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
+# Setting up logger
+logger = logging.getLogger(__name__)
 
 class EmailHandler:
     def __init__(self, sender_email: str, sender_password: str):
@@ -23,4 +28,17 @@ class EmailHandler:
         - email (str): Recipient email address.
         - subject (str): Message subject line.
         """
-        send_email(content, recepient_email, self.sender_email, self.sender_password, subject)
+        message = MIMEMultipart()
+        message["From"] = self.sender_email
+        message["To"] = recepient_email
+        message["Subject"] = subject
+        message.attach(MIMEText(content, "plain"))
+
+        try:
+            with smtplib.SMTP("smtp.gmail.com", 587) as server:
+                server.starttls()
+                server.login(self.sender_email, self.sender_password)
+                server.sendmail(self.sender_email, recepient_email, message.as_string())
+                logger.info(f"Message sent to {recepient_email}")
+        except Exception as e:
+            logger.exception(f"Error occurred while sending email: {e}")
