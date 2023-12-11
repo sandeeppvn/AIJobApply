@@ -27,29 +27,13 @@ Automate your job application process using AI, Google Sheets, and Email service
 - **Email Integration**: Sends out emails with customized messages.
 - **Command-Line Interface**: Easy-to-use CLI for managing the application process.
 
-## Project Structure
-
-### Core Modules
-
-- **`main.py`**: Entry point for the program. Triggers the job application process.
-- **`job_processor.py`**: Manages job processing, filtering, and updating.
-- **`email_handler.py`**: Handles email functionalities.
-- **`google_api_handler.py`**: Interacts with Google APIs.
-- **`openai_handler.py`**: Facilitates interactions with the OpenAI API.
-- **`utils.py`**: Provides utility functions.
-
-### Additional Directories
-
-- **`tests`**: Contains unit tests.
-- **`templates`**: Job application templates.
-
 ## Prerequisites
 
-- Python 3.6 or higher.
+- Python 3.8 or higher.
 - OpenAI GPT API access.
-- Google API credentials.
+- Google App Password
 
-## Adding a Job
+## Adding a Job (Optional)
 
 A job can be added to the google sheet either manually or
 you can use the RPI tool provided by Bardeen. This tool allows for a streamlined process of adding job listings through automation. For detailed instructions on how to use this tool, refer to the following Bardeen playbook: [LinkedIn Autobook](https://www.bardeen.ai/playbook/community/LinkedIn-5MfNwY4EcZLeK8GqTj).
@@ -58,33 +42,9 @@ you can use the RPI tool provided by Bardeen. This tool allows for a streamlined
 
 For setting up your job application data, AIJobApply utilizes Google Sheets. To get started quickly, you can use our pre-defined template. Access the Google Sheets template here: [AIJobApply Google Sheets Template](<https://docs.google.com/spreadsheets/d/1BQZXJg6gOo1LbHZPa-0wgOvPC1_yl8piH_L4TY5rL-Q/edit?usp=sharing>).
 
-Ensure that you follow the structure of the template to avoid any issues with data processing in AIJobApply.
+To make a copy of the template, click on `File` > `Make a copy`. This will create a copy of the template in your Google Drive. Name the copy as AIJobApply
 
-## Google API Credentials with OAuth 2.0
-
-To interact with Google Sheets from the application, you'll need to set up OAuth 2.0 credentials, which allow the application to access your Google Sheets on your behalf:
-
-1. **Google Cloud Console**: Visit the [Google Cloud Console](https://console.cloud.google.com/).
-2. **Create a New Project**: If you haven’t already, create a new project.
-3. **Enable Google Sheets API**: In your project, navigate to 'APIs & Services' > 'Dashboard' and enable the Google Sheets API and the Google Drive API
-4. **Configure OAuth Consent Screen**:
-   - Go to 'OAuth consent screen' and select an appropriate user type (usually 'External').
-   - Fill in the necessary details like Application name, User support email, and Developer contact information.
-   - Add the scopes for the Google Sheets API (e.g., `https://www.googleapis.com/auth/spreadsheets`).
-5. **Create OAuth 2.0 Credentials**:
-   - Go to 'Credentials' and click 'Create Credentials'.
-   - Choose 'OAuth client ID'.
-   - For the application type, select 'Desktop app' or another appropriate type.
-   - Name your OAuth 2.0 client and click 'Create'.
-6. **Download the Credentials**:
-   - Once your OAuth client is created, click the download button to download the JSON file containing your client ID and client secret.
-   - This file is used by your application to authenticate via OAuth 2.0.
-
-7. **Using the Credentials in AIJobApply**:
-   - Store your downloaded JSON file securely.
-   - When you run the AIJobApply application for the first time, it will prompt you to authorize access to your Google Sheets. Follow the instructions to complete the OAuth flow.
-
-Remember to never share your OAuth credentials publicly.
+You need to provide the sheet access to the service account created. To do this, click on `Share` and add the email address "aijobapply@aijobapply.iam.gserviceaccount.com" with `Editor` access.
 
 ## OpenAI API Setup
 
@@ -95,42 +55,94 @@ To utilize the OpenAI GPT API for message generation, follow these steps to obta
 3. **Create an API Key**: Follow the instructions to create a new API key.
 4. **Secure the API Key**: Store your API key securely. It's recommended to use environment variables for accessing the API key in your application.
 
+## Gmail Setup
+
+To send emails using the Gmail service, you need to set up an App Password. Follow these steps to generate an App Password:
+
+1. **Google Account**: If you don't already have a Google account, sign up at [Google](https://accounts.google.com/signup).
+2. **App Password**: Navigate to the [App Passwords](https://myaccount.google.com/apppasswords) section of your Google account.
+3. **Generate Password**: Select `Mail` and `Other` from the dropdown menus. Enter a name for the application and click `Generate`.
+4. **Secure the Password**: Store your App Password securely. It's recommended to use environment variables for accessing the App Password in your application.
+
+## Templates Setup
+
+Create a folder named 'templates'. Inside this folder, add the following templates:
+
+1. **cover_letter_template.pdf**: A PDF file containing your cover letter template. This will be used as a base for generating customized cover letters.
+2. **resume_template.pdf**: A PDF file containing your resume template. This will be used as a base for generating customized resumes.
+3. **email_template.pdf**: A PDF file containing your email template. This will be used as a base for generating customized emails and LinkedIn messages.
+4. **linkedin_note_template.pdf**: A PDF file containing your LinkedIn note template. This will be used as a base for generating customized LinkedIn notes when sending connection requests.
+
+## Setting Environment Variables
+
+Before running the project, you need to set several environment variables. Open your terminal and execute the following commands, replacing the placeholder values with your actual credentials.
+
+### For Unix-like Systems (Linux, macOS)
+
+```bash
+export OPENAI_URL=https://api.openai.com/v1/
+export OPENAI_API_KEY=your_openai_api_key
+export OPENAI_MODEL=gpt-4-0613
+export GMAIL_ADDRESS=your_gmail_address
+export GMAIL_PASSWORD=your_gmail_application_password
+export GOOGLE_SHEET_NAME=your_google_sheet_name(AIJobApply)
+export CHROMEDRIVER_PATH=path_to_your_chromedriver
+export LINKEDIN_USERNAME=your_linkedin_username
+export LINKEDIN_PASSWORD=your_linkedin_password
+export TEMPLATES_PATH=path_to_your_templates_folder
+```
+
+### For Windows
+
+In Command Prompt or PowerShell, use the following commands:
+
+```bat
+set OPENAI_URL=https://api.openai.com/v1/
+set OPENAI_API_KEY=your_openai_api_key
+set OPENAI_MODEL=gpt-4-0613
+set GMAIL_ADDRESS=your_gmail_address
+set GMAIL_PASSWORD=your_gmail_application_password
+set GOOGLE_SHEET_NAME=your_google_sheet_name(AIJobApply)
+set CHROMEDRIVER_PATH=path_to_your_chromedriver
+set LINKEDIN_USERNAME=your_linkedin_username
+set LINKEDIN_PASSWORD=your_linkedin_password
+set TEMPLATES_PATH=path_to_your_templates_folder
+```
+
+### Security Warning
+
+⚠️ **Important**: Be cautious with sensitive information such as API keys, usernames, and passwords. Avoid storing them in scripts or files that might be shared or committed to version control. It's always safer to use more secure methods for managing sensitive environment variables, such as a secure vault service or encrypted files.
 
 ## Installation
 
-Create a Python virtual environment:
+(Optional but Recommended) Create a Python virtual environment:
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 ```
 
+### Install from PyPI
+```bash
+pip install aijobapply
+```
 
-Clone the repository:
-
+### Install from Source
 ```bash
 git clone https://github.com/your-repository/AIJobApply.git
 cd AIJobApply
+pip install .
 ```
-
-Install the package:
-
-```bash
-pip install -e .
-```
-
-Add to PATH variable if necessary.
-
-## Configuration
-
-Set up environment variables for API keys and credentials in the .env file. 
-
-Modify templates in the templates directory as per your requirements.
 
 ## Usage
-
-After installation, the package provides a CLI. Run the application with:
+After installation, the application can be run using the `aijobapply` command.
+If the environment variables are set correctly, you can run the application using the following command:
 ```bash
-aijobapply --templates_path "path/to/templates" --gsheet_name "Your Google Sheet Name"
+aijobapply
+```
+
+Alternatively, if you want to run the application without setting environment variables, you can pass the required credentials as command line arguments:
+```bash
+aijobapply --openai-api-key your_openai_api_key --gmail-address your_gmail_address --gmail-password your_gmail_application_password --google-sheet-name your_google_sheet_name --chromedriver-path path_to_your_chromedriver --linkedin-username your_linkedin_username --linkedin-password your_linkedin_password --templates-path path_to_your_templates_folder
 ```
 
 Additional command line arguments are available. Use --help to see all options.

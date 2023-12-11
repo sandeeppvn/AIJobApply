@@ -169,12 +169,14 @@ class JobProcessor:
         email_jobs_df = jobs_df[jobs_df['Email'].str.strip() != ""].copy()
         if not email_jobs_df.empty:
             self.send_emails(email_jobs_df)
+            self.jobs_df.update(email_jobs_df)
 
         linkedin_jobs_df = jobs_df[jobs_df['LinkedIn Contact'].str.strip() != ""].copy()
         if not linkedin_jobs_df.empty:
-            self.send_linkedin_connections(linkedin_jobs_df)
+            # self.send_linkedin_connections(linkedin_jobs_df)
+            pass
 
-        self.jobs_df.update(jobs_df)
+        
 
     def send_emails(self, jobs_df: pd.DataFrame):
         """

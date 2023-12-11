@@ -9,20 +9,28 @@ logger = logging.getLogger(__name__)
 
 TEMPLATES = ["cover_letter_template", "resume_template", "email_template", "linkedin_note_template"]
 
-
-def load_template_from_pdf(path: str, template_name: str) -> str:
-    """Load content of a single template."""
-    with open(f"{path}/{template_name}.pdf", "rb") as f:
-        reader = PdfReader(f)
-        return reader.pages[0].extract_text()
-
-
 def load_templates(path: str = "templates") -> dict[str, str]:
     """Load all templates from a directory."""
+    if os.getenv("TEMPLATES_PATH"):
+        path = os.getenv("TEMPLATES_PATH")
     templates = {}
     for template in TEMPLATES:
         try:
-            templates[template] = load_template_from_pdf(path, template)
+            # If the template is a pdf file, load it using PyPDF2
+            if os.path.isfile(f"{path}/{template}.pdf"):
+                with open(f"{path}/{template}.pdf", "rb") as f:
+                    reader = PdfReader(f)
+                    templates[template] = reader.pages[0].extract_text()
+            # If the template is a txt file, load it as a string
+            elif os.path.isfile(f"{path}/{template}.txt"):
+                with open(f"{path}/{template}.txt", "r") as f:
+                    templates[template] = f.read()
+            # if the templates is a docx file, load it as a string
+            elif os.path.isfile(f"{path}/{template}.docx"):
+                with open(f"{path}/{template}.docx", "r") as f:
+                    templates[template] = f.read()
+            else:
+                logger.warning(f"Template {template} not found in the specified directory.")
         except Exception as e:
             logger.exception(f"Error occurred while loading {template}: {e}")
     return templates

@@ -16,13 +16,12 @@ def aijobapply_cli():
         -t --templates_path: path to the template folder
         -g --gmail: gmail address to send emails from
         -p --password: password to gmail account
-        -n --notion_secret_key: secret key to notion account
         -j --jobs_database_id: databse id of the jobs table in notion
         -o --openapi_key: openai api key
         -m --model: openai model to use
     """
     parser = argparse.ArgumentParser(description="AI Job Application CLI")
-    parser.add_argument("-t", "--templates_path", type=str, default="templates", help="Path to the template folder")
+    parser.add_argument("-t", "--templates_path", type=str, default=None, help="Path to the template folder")
 
     # If not specified, details from the .env file will be used
     parser.add_argument("-ga", "--gmail_address", type=str, default=None, help="Gmail address to send emails from")
@@ -45,6 +44,7 @@ def aijobapply_cli():
         selenium_driver_path=args.selenium_driver_path,
         linkedin_username=args.linkedin_username, linkedin_password=args.linkedin_password,
         google_sheet_name=args.gsheet_name
+        
     )
     job_processor.process_jobs()
 
