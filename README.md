@@ -165,4 +165,7 @@ Alternatively, if you want to run the application without setting environment va
 aijobapply --openai-api-key your_openai_api_key --gmail_address your_gmail_address --gmail-password your_gmail_application_password --linkedin_username your_linkedin_username --linkedin_password your_linkedin_password --templates_path path_to_your_templates_folder --google_credentials path_to_your_google_credentials_file --gsheet_name your_google_sheet_name --selenium_driver_path path_to_your_selenium_driver --model your_openai_model_name
 ```
 
-Additional command line arguments are available. Use --help to see all options.
+Additional command line arguments are available. Use --help to see all options and their descriptions:
+```bash
+aijobapply --help
+```
