@@ -57,7 +57,11 @@ To utilize the OpenAI GPT API for message generation, follow these steps to obta
 
 ## Gmail Setup
 
-To send emails using the Gmail service, you need to set up an App Password. Follow these steps to generate an App Password:
+To send emails using the Gmail service.
+
+- If you are not using 2FA, you can use your regular Gmail password. 
+
+- If you are using 2FA, you need to set up an App Password. Follow these steps to generate an App Password:
 
 1. **Google Account**: If you don't already have a Google account, sign up at [Google](https://accounts.google.com/signup).
 2. **App Password**: Navigate to the [App Passwords](https://myaccount.google.com/apppasswords) section of your Google account.
@@ -84,7 +88,7 @@ export OPENAI_URL=https://api.openai.com/v1/
 export OPENAI_API_KEY=your_openai_api_key
 export OPENAI_MODEL=gpt-4-0613
 export GMAIL_ADDRESS=your_gmail_address
-export GMAIL_PASSWORD=your_gmail_application_password
+export GMAIL_PASSWORD=your_gmail_password
 export GOOGLE_SHEET_NAME=your_google_sheet_name(AIJobApply)
 export CHROMEDRIVER_PATH=path_to_your_chromedriver
 export LINKEDIN_USERNAME=your_linkedin_username
@@ -101,7 +105,7 @@ set OPENAI_URL=https://api.openai.com/v1/
 set OPENAI_API_KEY=your_openai_api_key
 set OPENAI_MODEL=gpt-4-0613
 set GMAIL_ADDRESS=your_gmail_address
-set GMAIL_PASSWORD=your_gmail_application_password
+set GMAIL_PASSWORD=your_gmail_password
 set GOOGLE_SHEET_NAME=your_google_sheet_name(AIJobApply)
 set CHROMEDRIVER_PATH=path_to_your_chromedriver
 set LINKEDIN_USERNAME=your_linkedin_username
