@@ -175,7 +175,7 @@ class JobProcessor:
 
         linkedin_jobs_df = jobs_df[jobs_df['LinkedIn Contact'].str.strip() != ""].copy()
         if not linkedin_jobs_df.empty:
-            # self.send_linkedin_connections(linkedin_jobs_df)
+            self.send_linkedin_connections(linkedin_jobs_df)
             pass
 
         
