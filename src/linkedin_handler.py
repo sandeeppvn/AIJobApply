@@ -1,5 +1,7 @@
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import (ElementNotInteractableException,
+                                        NoSuchElementException,
+                                        TimeoutException)
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
@@ -10,8 +12,14 @@ class LinkedInConnectorClass:
         # Verify driver path, username and password
         if driver_path is None:
             raise ValueError("Driver path not provided.")
+        
+        options = webdriver.ChromeOptions()
+        options.add_argument("--incognito")
+        
+        cService = webdriver.ChromeService(executable_path=driver_path)
 
-        self.driver = webdriver.Chrome(driver_path)
+        self.driver = webdriver.Chrome(service=cService, options=options)
+        self.driver.maximize_window()
         self.wait = WebDriverWait(self.driver, 10)
 
         self.login(username, password)
@@ -45,14 +53,38 @@ class LinkedInConnectorClass:
                 raise ValueError("LinkedIn profile URL not provided.")
             self.driver.get(profile_url)
 
-            connect_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Connect')]")))
-            connect_button.click()
+            try:
+                more_button = self.find_elements_by_text("button", "More")
+                if more_button:
+                    more_button[0].click()
+                    connect_button = self.find_elements_by_text("span", "Connect")
+                    if connect_button:
+                        connect_button[0].click()
+                    else:
+                        print("Error: Unable to find the Connect button.")
+                else:
+                    print("Error: Unable to find the More button.")
+            except ElementNotInteractableException:
+                print("Error: Unable to click the Connect button.")
 
-            note_field = self.wait.until(EC.presence_of_element_located((By.XPATH, "//textarea[@name='message']")))
-            note_field.send_keys(note)
+            
+            add_note_button = self.find_elements_by_text("button", "Add a note")
+            if add_note_button:
+                add_note_button[0].click()
+            else:
+                print("Error: Unable to find the Add a note button.")
 
-            send_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Send')]")))
-            send_button.click()
+            note_field = self.driver.find_elements(By.ID, "custom-message")
+            if note_field:
+                note_field[0].send_keys(note)
+            else:
+                print("Error: Unable to find the note field.")
+
+            send_button = self.find_elements_by_text("button", "Send")
+            if send_button:
+                send_button[0].click()
+            else:
+                print("Error: Unable to find the Send now button.")
 
         except NoSuchElementException:
             print("Error: Unable to find an element on the page.")
@@ -61,3 +93,19 @@ class LinkedInConnectorClass:
 
     def close_browser(self):
         self.driver.quit()
+
+    def click_with_javascript(self, element):
+        """
+        Clicks on a given web element using JavaScript.
+        """
+        try:
+            self.driver.execute_script("arguments[0].click();", element)
+        except ElementNotInteractableException as e:
+            print(f"Error while clicking element: {e}")
+
+    def find_elements_by_text(self, tag, text):
+        """
+        Finds elements based on tag and text content.
+        """
+        elements = self.driver.find_elements(By.TAG_NAME, tag)
+        return [element for element in elements if text in element.text]
