@@ -32,12 +32,15 @@ class JobProcessor:
         - chromedriver_path (str): Path to the selenium driver.
         - linkedin_username (str): LinkedIn username.
         - linkedin_password (str): LinkedIn password.
+        - interactive (bool): Run in interactive mode/show browser.
         """
 
         self.jobs_df = pd.DataFrame()
         for key, value in kwargs.items():
             setattr(self, key, value)
+        logger.info("JobProcessor initialized.")
         self.gc = GoogleSheetsHandler(self.google_api_credentials_file, self.google_sheet_name)
+        logger.info("Google Sheets Sevice Account connected.")
         
 
     def process_jobs(self):
@@ -54,20 +57,20 @@ class JobProcessor:
             logger.info("Processing Contact Ready jobs...")
             self.process_contact_ready_jobs()
 
-            logger.info("Updating Google Sheet...")
+            logger.info("Updating Google Sheet to reflect content generation status...")
             self.gc.update_gsheet_from_dataframe(self.jobs_df)
 
             logger.info("Processing Content Generated jobs...")
             self.process_content_generated_jobs()
 
-            logger.info("Updating Google Sheet...")
+            logger.info("Updating Google Sheet to reflect email and LinkedIn connection status...")
             self.gc.update_gsheet_from_dataframe(self.jobs_df)
             
             logger.info("Job processing complete.")
 
         except Exception as e:
             logger.error(f"Error while processing jobs: {str(e)}")
-            raise
+            raise e
 
     def get_all_jobs(self) -> pd.DataFrame:
         """
@@ -146,6 +149,7 @@ class JobProcessor:
                 for key, value in generated_contents.items():
                     job[key] = value
                 job['Status'] = 'Content Generated'  # Set status if no error occurs
+                logger.info(f"Custom contents generated for job at Company Name {job['Company Name']}")
 
                 create_job_folder(job) # type: ignore
 
@@ -176,7 +180,6 @@ class JobProcessor:
         linkedin_jobs_df = jobs_df[jobs_df['LinkedIn Contact'].str.strip() != ""].copy()
         if not linkedin_jobs_df.empty:
             self.send_linkedin_connections(linkedin_jobs_df)
-            pass
 
         
 
@@ -190,6 +193,8 @@ class JobProcessor:
         """
         from src.email_handler import EmailHandler
         email_handler = EmailHandler(self.gmail_address, self.gmail_password)
+        logger.info("Email Connection Established.")
+        logger.info(f"Sending emails to {len(jobs_df)} contacts...")
         def send_email_wrapper(job: pd.Series, email_handler: EmailHandler) -> pd.Series:
                 try:
                     email_handler.send(
@@ -217,7 +222,12 @@ class JobProcessor:
         """        
         
         from src.linkedin_handler import LinkedInConnectorClass
-        linkedin_handler = LinkedInConnectorClass(self.chromedriver_path, self.linkedin_username, self.linkedin_password)
+        logger.info("Logging into LinkedIn...")
+        linkedin_handler = LinkedInConnectorClass(self.chromedriver_path, self.interactive)
+        linkedin_handler.login(self.linkedin_username, self.linkedin_password)
+
+        logger.info("LinkedIn Connection Established.")
+        logger.info(f"Sending LinkedIn connection requests to {len(jobs_df)} contacts...")
         def send_linkedin_connection_with_message(job: pd.Series, linkedin_handler: LinkedInConnectorClass) -> pd.Series:
             try:
                 linkedin_handler.send_connection_request(
@@ -225,6 +235,7 @@ class JobProcessor:
                     note=job['LinkedIn Note']
                 )
                 job['Status'] = 'LinkedIn Connection Sent'
+                logger.info(f"LinkedIn connection request sent to {job['Name']} for job at Company Name {job['Company Name']}")
                 
             except Exception as e:
                 logger.warning(f"Failed to send LinkedIn connection request for job at Company Name {job['Company Name']}. Error: {str(e)}")

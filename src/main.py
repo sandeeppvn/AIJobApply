@@ -20,6 +20,11 @@ def aijobapply_cli():
         -j --jobs_database_id: databse id of the jobs table in notion
         -o --openapi_key: openai api key
         -m --model: openai model to use
+        -s --chromedriver_path: path to the selenium driver
+        -lu --linkedin_username: linkedin username
+        -lp --linkedin_password: linkedin password
+        -i --interactive: run in interactive mode/show browser
+
     """
     parser = argparse.ArgumentParser(description="AI Job Application CLI")
     parser.add_argument("-t", "--TEMPLATES_PATH", type=str, default=None, help="Path to the template folder")
@@ -33,6 +38,8 @@ def aijobapply_cli():
     parser.add_argument("-s", "--CHROMEDRIVER_PATH", type=str, default=None, help="Path to the selenium driver")
     parser.add_argument("-lu", "--LINKEDIN_USERNAME", type=str, default=None, help="LinkedIn username")
     parser.add_argument("-lp", "--LINKEDIN_PASSWORD", type=str, default=None, help="LinkedIn password")
+    parser.add_argument("-i", "--INTERACTIVE", action="store_true", default=False, help="Run in interactive mode/show browser")
+
 
     args = parser.parse_args()
 
@@ -53,6 +60,7 @@ def aijobapply_cli():
         chromedriver_path=validated_args["CHROMEDRIVER_PATH"],
         linkedin_username=validated_args["LINKEDIN_USERNAME"],
         linkedin_password=validated_args["LINKEDIN_PASSWORD"],
+        interactive=validated_args["INTERACTIVE"]
     )
     job_processor.process_jobs()
 

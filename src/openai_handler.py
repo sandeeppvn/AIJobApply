@@ -108,8 +108,17 @@ class OpenAIConnectorClass:
                 ("message_subject_line", "Message Subject line"),
                 ("linkedin_note", "LinkedIn Note")
             )
-            value = self.query_prompt(prompt, function_description)
-            return value
+            response = self.query_prompt(prompt, function_description)
+            # Check LinkedIn Note length and regenerate if necessary
+            linkedin_note = response.get("LinkedIn Note")
+            linkedin_prompt = "The LinkedIn note is too long. Please provide a shorter note. (200 characters or less)"
+            while linkedin_note and len(linkedin_note) > 300:
+                response = openai.Completion.create(
+                    model=self.model,
+                    prompt=linkedin_prompt,
+                    temperature=0,
+                )
+                linkedin_note = response.choices[0].text.strip()
 
         except json.JSONDecodeError:
             logging.error("Error decoding JSON from OpenAI response.")

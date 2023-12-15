@@ -143,6 +143,7 @@ def validate_argments(args) -> dict:
         "CHROMEDRIVER_PATH": "Path to the selenium driver",
         "LINKEDIN_USERNAME": "LinkedIn username",
         "LINKEDIN_PASSWORD": "LinkedIn password",
+        "INTERACTIVE": "Run in interactive mode/show browser"
     }
 
     # Create a dictionary to store the validated arguments
@@ -150,6 +151,13 @@ def validate_argments(args) -> dict:
 
     # If there is an environment file, load it to get the environment variables
     load_dotenv(find_dotenv())
+
+    # Load the linkedin_note_template.pdf file and ensure the content is under 200 characters
+    with open("templates/linkedin_note_template.pdf", "rb") as f:
+        reader = PdfReader(f)
+        linkedin_note_template = reader.pages[0].extract_text()
+        if len(linkedin_note_template) > 200:
+            raise ValueError("LinkedIn note template cannot be longer than 200 characters.")
     
     # Check if all required arguments are present
     for arg_name, arg_description in required_args.items():

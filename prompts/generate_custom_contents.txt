@@ -43,7 +43,7 @@ Step 5: For 'message_subject_line':
     iii) The subject line should be short and concise.
     iv) Add the subject line to "message_subject_line" variable.
     vi) Dont repeat the template verbatim, improvise it
-Step 6: For the 'linkedin_note', modify only the Name from {name}, Position {position} and Company Name from {company_name}
+Step 6: For the 'linkedin_note', modify only the Name from {name}, Position {position} and Company Name from {company_name}. Ensure the total length of the note is under 200 characters.
 Step 7: Verify all the generated content and ensure it is consistent with the original templates.
 Step 8: Recheck for any grammatical errors and spelling mistakes and correct them.
 
@@ -55,5 +55,5 @@ A python dictionary with the following keys and values:
     "message_content": <generated Message Content>,
     "updated_job_description": <updated job description>,
     "message_subject_line": <generated email subject line>,
-    "linkedin_note": <generated linkedin note
+    "linkedin_note": <generated linkedin note>
 }}

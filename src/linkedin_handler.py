@@ -1,3 +1,6 @@
+import logging
+import re
+
 from selenium import webdriver
 from selenium.common.exceptions import (ElementNotInteractableException,
                                         NoSuchElementException,
@@ -8,104 +11,156 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 
 class LinkedInConnectorClass:
-    def __init__(self, driver_path, username: str, password: str):
-        # Verify driver path, username and password
-        if driver_path is None:
-            raise ValueError("Driver path not provided.")
-        
-        options = webdriver.ChromeOptions()
-        options.add_argument("--incognito")
-        
-        cService = webdriver.ChromeService(executable_path=driver_path)
+    """
+    A class to automate LinkedIn connection requests.
 
-        self.driver = webdriver.Chrome(service=cService, options=options)
-        self.driver.maximize_window()
+    Methods:
+    - __init__: Initializes the class with driver, username, and password.
+    - validate_input: Validates input parameters.
+    - initialize_driver: Initializes the WebDriver.
+    - login: Logs into LinkedIn.
+    - send_connection_request: Sends a connection request to a specified LinkedIn profile.
+    - click_connect_button: Clicks the "Connect" button on a LinkedIn profile.
+    - add_note_and_send: Adds a note and sends the connection request.
+    - enter_text: Enters text into a web element.
+    - click: Clicks a web element identified by the given XPath.
+    - close_browser: Closes the WebDriver browser.
+    """
+
+    def __init__(self, driver_path: str, interactive: bool = False):
+        """Initializes the LinkedInConnectorClass with the given WebDriver path"""
+        if not driver_path:
+            raise ValueError("Driver path not provided.")
+        self.logger = logging.getLogger(__name__)
+        self.driver = self.initialize_driver(driver_path, interactive)
         self.wait = WebDriverWait(self.driver, 10)
 
-        self.login(username, password)
-
+    @staticmethod
+    def initialize_driver(driver_path: str, interactive: bool = False):
+        """Initializes the Selenium WebDriver with Chrome options."""
+        options = webdriver.ChromeOptions()
+        options.add_argument("--disable-extensions")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        if not interactive:
+            options.add_argument("--headless")
+        prefs = {"profile.managed_default_content_settings.images": 5,}
+        options.add_experimental_option("prefs", prefs)
+        service = webdriver.ChromeService(executable_path=driver_path)
+        driver = webdriver.Chrome(service=service, options=options)
+        driver.maximize_window()
+        return driver
 
     def login(self, username: str, password: str):
+        """Logs into LinkedIn using the provided username and password."""
+        if not username or not password:
+            raise ValueError("Linkedin Username or password not provided.")
         try:
-            if username is None:
-                raise ValueError("LinkedIn username not provided.")
-            if password is None:
-                raise ValueError("LinkedIn password not provided.")
             self.driver.get('https://www.linkedin.com/login')
-
-            username_field = self.wait.until(EC.presence_of_element_located((By.ID, 'username')))
-            username_field.send_keys(username)
-
-            password_field = self.wait.until(EC.presence_of_element_located((By.ID, 'password')))
-            password_field.send_keys(password)
-
-            login_button = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Sign in')]")))
-            login_button.click()
-
-        except NoSuchElementException:
-            print("Error: Unable to find an element on the page.")
-        except TimeoutException:
-            print("Error: Timed out waiting for page elements to load.")
+            self.enter_text(By.ID, 'username', username)
+            self.enter_text(By.ID, 'password', password)
+            if not self.click("//button[@type='submit']"):
+                self.logger.error("Login button click failed")
+        except (NoSuchElementException, TimeoutException) as e:
+            self.logger.error(f"Error while logging in: {e}")
 
     def send_connection_request(self, profile_url, note):
+        """
+        Sends a connection request to the given LinkedIn profile URL.
+        Adds a note if provided.
+        """
+        self.click_connect_button(profile_url)
+        self.add_note_and_send(note)
+
+    def get_name_from_url(self, profile_url):
+        """Extracts the name from the given LinkedIn profile URL."""
+        # Extract the first name from the URL
+        profile_identifier = re.search(r'/in/(.+?)/', profile_url).group(1)
+        name_xpath = f"//a[contains(@href, '/in/{profile_identifier}/')]/h1[contains(@class, 'text-heading-xlarge')]"
         try:
-            if profile_url is None:
-                raise ValueError("LinkedIn profile URL not provided.")
-            self.driver.get(profile_url)
-
-            try:
-                more_button = self.find_elements_by_text("button", "More")
-                if more_button:
-                    more_button[0].click()
-                    connect_button = self.find_elements_by_text("span", "Connect")
-                    if connect_button:
-                        connect_button[0].click()
-                    else:
-                        print("Error: Unable to find the Connect button.")
-                else:
-                    print("Error: Unable to find the More button.")
-            except ElementNotInteractableException:
-                print("Error: Unable to click the Connect button.")
-
-            
-            add_note_button = self.find_elements_by_text("button", "Add a note")
-            if add_note_button:
-                add_note_button[0].click()
-            else:
-                print("Error: Unable to find the Add a note button.")
-
-            note_field = self.driver.find_elements(By.ID, "custom-message")
-            if note_field:
-                note_field[0].send_keys(note)
-            else:
-                print("Error: Unable to find the note field.")
-
-            send_button = self.find_elements_by_text("button", "Send")
-            if send_button:
-                send_button[0].click()
-            else:
-                print("Error: Unable to find the Send now button.")
-
+            name_element = self.driver.find_element(By.XPATH, name_xpath)
         except NoSuchElementException:
-            print("Error: Unable to find an element on the page.")
-        except TimeoutException:
-            print("Error: Timed out waiting for page elements to load.")
+            self.logger.error("Error while getting name from URL")
+            return None
+        name = name_element.text
+        return name
+
+
+    def click_connect_button(self, profile_url):
+        """
+        Navigates to the given profile URL and clicks the "Connect" button.
+        If the button is within a dropdown, expands the dropdown first.
+        """
+        self.driver.get(profile_url)
+
+        # Get the name from the profile URL
+        name = self.get_name_from_url(profile_url)
+        if not name:
+            raise Exception("Error while getting name from URL")
+
+
+        try:    
+            xpath = (
+                f"[contains(translate(@aria-label, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'invite') "
+                f"and contains(translate(@aria-label, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{name.lower()}') "
+                f"and contains(translate(@aria-label, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'to connect') "
+                f"and (@role='button' or self::button)]"
+            )
+            
+            connect_buttons_xpath = f"//button{xpath}"
+                
+            if not self.click(connect_buttons_xpath):
+                raise Exception("No Direct clickable connect buttons found, trying dropdowns")
+
+        except:
+            
+            self.logger.error("No Direct clickable connect buttons found, trying dropdowns")
+                
+            try:
+                more_actions_buttons_xpath = f"//button[contains(@aria-label, 'More actions')]"
+                if not self.click(more_actions_buttons_xpath):
+                    raise Exception("No more actions buttons found")
+                
+                connect_divs_xpath = f"//div{xpath}"  # Assuming 'xpath' is defined earlier
+                if not self.click(connect_divs_xpath):
+                    raise Exception("No dropdown connect buttons found")
+                
+            except Exception as e:
+                self.logger.error(f"Error while clicking more actions and dropdown connect buttons: {e}")
+                raise Exception("Error while clicking more actions and dropdown connect buttons")
+
+                
+
+    def add_note_and_send(self, note):
+        """Adds a note to the connection request and sends it."""
+        try:
+            if not self.click("//button[@aria-label='Add a note']"):
+                raise Exception("No Add a note button found")
+            self.enter_text(By.ID, "custom-message", note)
+            
+            if not self.click("//button[@aria-label='Send now']"):
+                raise Exception("No Send now button found")
+            
+        except (NoSuchElementException, TimeoutException, ElementNotInteractableException) as e:
+            self.logger.error(f"Error while adding note or sending request: {e}")
+
+    def enter_text(self, by, locator, text):
+        """Enters text into a web element identified by the given locator."""
+        element = self.wait.until(EC.presence_of_element_located((by, locator)))
+        element.send_keys(text)
+
+    def click(self, xpath: str) -> bool:
+        try:
+            elements = self.wait.until(EC.presence_of_all_elements_located((By.XPATH, xpath)))
+            for element in elements:
+                if element.is_displayed() and element.is_enabled():
+                    element.click()
+                    return True
+        except (ElementNotInteractableException, TimeoutException, NoSuchElementException) as e:
+            self.logger.error(f"Error clicking element with XPath {xpath}: {e}")
+        return False
 
     def close_browser(self):
+        """Closes the WebDriver browser."""
         self.driver.quit()
-
-    def click_with_javascript(self, element):
-        """
-        Clicks on a given web element using JavaScript.
-        """
-        try:
-            self.driver.execute_script("arguments[0].click();", element)
-        except ElementNotInteractableException as e:
-            print(f"Error while clicking element: {e}")
-
-    def find_elements_by_text(self, tag, text):
-        """
-        Finds elements based on tag and text content.
-        """
-        elements = self.driver.find_elements(By.TAG_NAME, tag)
-        return [element for element in elements if text in element.text]
