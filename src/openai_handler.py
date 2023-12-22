@@ -3,25 +3,37 @@ import logging
 
 import openai
 
-from src.utils import (generate_function_description, load_prompt,
-                       load_templates)
+from src.utils import (generate_function_description, get_file_content,
+                       load_prompt)
 
 logging.basicConfig(level=logging.INFO)
 
+from typing import Optional
+
+
 class OpenAIConnectorClass:
-    def __init__(self, openapi_key: str, openai_url: str, openai_model: str):
+    def __init__(self, openapi_key: str, openai_url: str, openai_model: str, resume_path: str, cover_letter_path: str, email_template: Optional[str] = None, linkedin_note_template: Optional[str] = None):
         """
         Initialize Openai object and set API key.
 
-        Args:
+        Parameters:
         - openapi_key (str): OpenAI API key.
         - openai_url (str): OpenAI API URL.
-        - model (str): OpenAI model to use.
+        - openai_model (str): OpenAI model to use.
+        - resume_path (str): Path to resume.
+        - cover_letter_path (str): Path to cover letter.
+        - email_template (str): Email content. (optional)
+        - linkedin_note_template (str): LinkedIn note. (optional)
         """
 
         openai.api_key = openapi_key
         openai.api_base = openai_url
         self.model = openai_model
+
+        self.resume_template = get_file_content(resume_path)
+        self.cover_letter_template = get_file_content(cover_letter_path)
+        self.email_template = email_template
+        self.linkedin_note_template = linkedin_note_template
 
 
     def query_prompt(self, prompt: str, function_description: list = [{}]) -> dict:
@@ -68,33 +80,38 @@ class OpenAIConnectorClass:
             logging.error(f"Error querying OpenAI API: {e}")
             return {}
 
-    def generate_custom_contents(self, job) -> dict:
+    def generate_custom_content(self, job) -> dict:
         """
         Generate customized content for email, cover letter, and resume based on given inputs.
         - job: The pandas Series containing the job information.
-        **kwargs:
-        - raw_job_description (str): Raw job description.
-        - position (str): Position name.
-        - company_name (str): Company name.
-        - job_link (str): Link to the job posting.
-
 
         Returns:
         - dict: Customized contents for email, cover letter, resume, updated job description, message subject line and linkedin note
         """
 
-        kwargs = {
+        prompt_args = {
             "raw_job_description": job["Description"],
             "position": job["Position"],
             "company_name": job["Company Name"],
             "job_link": job["Link"],
             "name": job["Name"],
+            "resume_template": self.resume_template,
+            "cover_letter_template": self.cover_letter_template,
         }
-        templates = load_templates()
-        merged_kwargs = {**templates, **kwargs}
+
+        if self.email_template:
+            prompt_args["email_template"] = self.email_template
+        else:
+            prompt_args["email_template"] = ""
+        if self.linkedin_note_template:
+            prompt_args["linkedin_note_template"] = self.linkedin_note_template
+        else:
+            prompt_args["linkedin_note_template"] = ""
+        
+        
         prompt = load_prompt(
-            prompt_name="generate_custom_contents",
-            **merged_kwargs,
+            prompt_name="generate_custom_content",
+            prompt_args=prompt_args,
         )
 
         try:

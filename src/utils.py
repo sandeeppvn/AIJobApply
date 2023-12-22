@@ -1,6 +1,7 @@
 import logging
 import os
 
+import docx
 import pandas as pd
 from dotenv import find_dotenv, load_dotenv
 from PyPDF2 import PdfReader
@@ -10,31 +11,30 @@ logger = logging.getLogger(__name__)
 
 TEMPLATES = ["cover_letter_template", "resume_template", "email_template", "linkedin_note_template"]
 
-def load_templates(path: str = "templates") -> dict[str, str]:
-    """Load all templates from a directory."""
-    if os.getenv("TEMPLATES_PATH"):
-        path = os.getenv("TEMPLATES_PATH")
-    templates = {}
-    for template in TEMPLATES:
-        try:
-            # If the template is a pdf file, load it using PyPDF2
-            if os.path.isfile(f"{path}/{template}.pdf"):
-                with open(f"{path}/{template}.pdf", "rb") as f:
-                    reader = PdfReader(f)
-                    templates[template] = reader.pages[0].extract_text()
-            # If the template is a txt file, load it as a string
-            elif os.path.isfile(f"{path}/{template}.txt"):
-                with open(f"{path}/{template}.txt", "r") as f:
-                    templates[template] = f.read()
-            # if the templates is a docx file, load it as a string
-            elif os.path.isfile(f"{path}/{template}.docx"):
-                with open(f"{path}/{template}.docx", "r") as f:
-                    templates[template] = f.read()
-            else:
-                logger.warning(f"Template {template} not found in the specified directory.")
-        except Exception as e:
-            logger.exception(f"Error occurred while loading {template}: {e}")
-    return templates
+def get_file_content(path: str) -> str:
+    """Get the content of a file."""
+    try:
+        # Ensure the file is .txt, .docx, or .pdf
+        if not path.endswith((".txt", ".docx", ".pdf")):
+            raise ValueError("Only .txt, .docx, and .pdf files are supported.")
+
+        # Read the file content based on the file type
+        if path.endswith(".txt"):
+            with open(path, "r", encoding="utf-8") as file:
+                content = file.read()
+        elif path.endswith(".pdf"):
+            with open(path, "rb") as file:
+                pdf_reader = PdfReader(file)
+                content = "\n".join([pdf_reader.pages[page].extract_text() for page in range(len(pdf_reader.pages))])
+        elif path.endswith(".docx"):
+            doc = docx.Document(path)
+            content = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+        else:
+            raise ValueError(f"Invalid file type: {path}")
+        return content
+    except Exception as e:
+        logger.exception(f"Error reading file: {e}")
+        return ""
 
 
 def generate_function_description(name: str, description: str, *args: tuple[str, str]) -> list[dict]:
@@ -66,13 +66,13 @@ def generate_function_description(name: str, description: str, *args: tuple[str,
     return function_description
 
 
-def load_prompt(prompt_name: str, **kwargs) -> str:
+def load_prompt(prompt_name: str, prompt_args: dict) -> str:
     """
     Load prompt for a given prompt name.
 
     Args:
     - prompt_name (str): Name of the prompt txt file
-    - **kwargs: Keyword arguments for the prompt.
+    - prompt_args (dict): Dictionary of arguments to be passed to the prompt.
 
     Returns:
     - str: Prompt content in an f-string format.
@@ -81,14 +81,10 @@ def load_prompt(prompt_name: str, **kwargs) -> str:
         # Load the content from the file "generate_custom_contents.txt" and convert it to an f-string
         with open("prompts/generate_custom_contents.txt", "r") as f:
             prompt = f.read()
-    elif prompt_name == "find_email":
-        # Load the content from the file "find_email.txt" and convert it to an f-string
-        with open("prompts/find_email.txt", "r") as f:
-            prompt = f.read()
     else:
         raise ValueError(f"Invalid prompt name: {prompt_name}")
 
-    return prompt.format(**kwargs)
+    return prompt.format(**prompt_args)
 
 
 def create_rich_text_dict(content: str) -> dict:
@@ -118,54 +114,91 @@ def create_job_folder(job:pd.Series, destination:str = "job_applications"):
 
     # Save the template files to the folder as docx files
     # TODO: Add logic to generate updated templates and save them to the folder
-    templates = load_templates()
+    templates = {
+        "cover_letter": job["Cover Letter Template"],
+        "resume": job["Resume Template"],
+        "email": job["Email Template"],
+        "linkedin_note": job["LinkedIn Note Template"],
+    }
     for template_name, template_content in templates.items():
         with open(f"{job_folder}/{template_name}.docx", "w") as f:
             f.write(template_content)
 
-def validate_argments(args) -> dict:
+
+
+
+def get_argument_value(arg_name, args):
+    """
+    Check if the argument is provided via CLI or as an environment variable.
+    Raise an error if the argument is not found.
+    """
+    arg_value = getattr(args, arg_name, None) or os.getenv(arg_name)
+    if arg_value is None:
+        raise ValueError(f"Required argument '{arg_name}' not provided.")
+    return arg_value
+
+def validate_arguments(args) -> dict:
     """
     Validate the arguments passed to the CLI. 
     Check if all arguments are present and valid either from the CLI or as an environment variable.
     Create a dictionary of the arguments and their updated values.
     """
-    
-    # Define the required arguments
+    load_dotenv(find_dotenv())
+    validate_args = {}
+
     required_args = {
-        "TEMPLATES_PATH": "Path to the template folder",
-        "GMAIL_ADDRESS": "Gmail address to send emails from",
-        "GMAIL_PASSWORD": "Password to gmail account",
-        "GOOGLE_API_CREDENTIALS_FILE": "Path to the credentials file for google api",
-        "GOOGLE_SHEET_NAME": "Name of the google sheet to read jobs from",
-        "OPENAI_URL": "Openai url",
+        # Gmail arguments
+        "USE_GMAIL": "Use Gmail to send emails",
+
+        # LinkedIn arguments
+        "USE_LINKEDIN": "Use LinkedIn to send connection requests",
+
+        # OpenAI arguments
         "OPENAI_API_KEY": "Openai api key",
         "OPENAI_MODEL": "Openai model to use",
+        "OPENAI_URL": "Openai url",
+
+        # Google Sheets arguments
+        "GOOGLE_API_CREDENTIALS_FILE": "Path to the credentials file for google api",
+        "GOOGLE_SHEET_NAME": "Name of the google sheet to read jobs from",
+
+        # Document arguments
+        "RESUME_PATH": "Path to resume",
+        "COVER_LETTER_PATH": "Path to cover letter",
+        
+    }
+
+    gmail_args = {
+        "GMAIL_ADDRESS": "Gmail address to send emails from",
+        "GMAIL_PASSWORD": "Password to gmail account",
+        "EMAIL_CONTENT": "Email content",
+    }
+
+    linkedin_args = {
         "CHROMEDRIVER_PATH": "Path to the selenium driver",
         "LINKEDIN_USERNAME": "LinkedIn username",
         "LINKEDIN_PASSWORD": "LinkedIn password",
         "INTERACTIVE": "Run in interactive mode/show browser"
     }
 
-    # Create a dictionary to store the validated arguments
-    validated_args = {}
-
-    # If there is an environment file, load it to get the environment variables
-    load_dotenv(find_dotenv())
-
-    # Load the linkedin_note_template.pdf file and ensure the content is under 200 characters
-    with open("templates/linkedin_note_template.pdf", "rb") as f:
-        reader = PdfReader(f)
-        linkedin_note_template = reader.pages[0].extract_text()
-        if len(linkedin_note_template) > 200:
-            raise ValueError("LinkedIn note template cannot be longer than 200 characters.")
-    
-    # Check if all required arguments are present
+    # Check if all required arguments are provided
     for arg_name, arg_description in required_args.items():
-        if getattr(args, arg_name) is None:
-            if os.getenv(arg_name):
-                validated_args[arg_name] = os.getenv(arg_name)
-            else:
-                raise ValueError(f"Argument {arg_name} not found. Please provide {arg_description} either as a CLI argument or as an environment variable.")
-        else:
-            validated_args[arg_name] = getattr(args, arg_name)
-    return validated_args
+        if arg_name not in args.__dict__ and os.getenv(arg_name) is None:
+            raise ValueError(f"Required argument '{arg_name}' not provided.")
+        validate_args[arg_name] = get_argument_value(arg_name, args)
+        
+    # Check if all Gmail arguments are provided
+    if args.USE_GMAIL:
+        for arg_name, arg_description in gmail_args.items():
+            if arg_name not in args.__dict__ and os.getenv(arg_name) is None:
+                raise ValueError(f"Gmail argument '{arg_name}' not provided.")
+            validate_args[arg_name] = get_argument_value(arg_name, args)
+            
+    # Check if all LinkedIn arguments are provided
+    if args.USE_LINKEDIN:
+        for arg_name, arg_description in linkedin_args.items():
+            if arg_name not in args.__dict__ and os.getenv(arg_name) is None:
+                raise ValueError(f"LinkedIn argument '{arg_name}' not provided.")
+            validate_args[arg_name] = get_argument_value(arg_name, args)
+
+    return validate_args

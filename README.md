@@ -169,3 +169,13 @@ Additional command line arguments are available. Use --help to see all options a
 ```bash
 aijobapply --help
 ```
+
+## Selenium Driver Setup
+
+To automate the LinkedIn connection request and message sending process, you need to download the appropriate Selenium driver for your browser. The Selenium driver is used by the Selenium Python library to automate the browser actions.
+Currently, the following Selenium drivers are supported:
+- Chrome: [ChromeDriver](https://chromedriver.chromium.org/downloads)
+
+Download the appropriate driver for your browser and set the environment variable `SELENIUM_DRIVER_PATH` to the path of the driver executable.
+
+```bash

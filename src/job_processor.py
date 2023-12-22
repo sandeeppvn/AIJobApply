@@ -3,6 +3,7 @@ import os
 from typing import Optional
 
 import pandas as pd
+from pytest import param
 from tqdm import tqdm
 
 from src.google_sheets_handler import GoogleSheetsHandler
@@ -20,26 +21,13 @@ class JobProcessor:
     ):
         """
         Initialize JobProcessor class.
-        Args:
-        - templates_path (str): Path to the template folder.
-        - gmail_address (str): Gmail address to send emails from.
-        - gmail_password (str): Password to gmail account.
-        - google_api_credentials_file (str): Path to the credentials file for google api.
-        - google_sheet_name (str): Name of the google sheet to read jobs from.
-        - openai_url (str): Openai url.
-        - openai_api_key (str): Openai api key.
-        - openai_model (str): Openai model to use.
-        - chromedriver_path (str): Path to the selenium driver.
-        - linkedin_username (str): LinkedIn username.
-        - linkedin_password (str): LinkedIn password.
-        - interactive (bool): Run in interactive mode/show browser.
         """
 
         self.jobs_df = pd.DataFrame()
         for key, value in kwargs.items():
             setattr(self, key, value)
         logger.info("JobProcessor initialized.")
-        self.gc = GoogleSheetsHandler(self.google_api_credentials_file, self.google_sheet_name)
+        self.gc = GoogleSheetsHandler(self.GOOGLE_API_CREDENTIALS_FILE)
         logger.info("Google Sheets Sevice Account connected.")
         
 
@@ -51,11 +39,11 @@ class JobProcessor:
             logger.info("Processing jobs...")
             self.jobs_df = self.get_all_jobs()
 
-            logger.info("Processing new jobs...")
-            self.process_new_jobs()
+            logger.info("Finding jobs with missing contacts...")
+            self.find_jobs_with_missing_contacts()
 
-            logger.info("Processing Contact Ready jobs...")
-            self.process_contact_ready_jobs()
+            logger.info("Generating custom contents for jobs...")
+            self.generate_content_for_jobs()
 
             logger.info("Updating Google Sheet to reflect content generation status...")
             self.gc.update_gsheet_from_dataframe(self.jobs_df)
@@ -76,7 +64,7 @@ class JobProcessor:
         """
         Get all jobs from the Google Sheet.
         """
-        gsheet = self.gc.get_gsheet(self.google_sheet_name)
+        gsheet = self.gc.get_gsheet(self.GOOGLE_SHEET_NAME)
         jobs = pd.DataFrame(gsheet.sheet1.get_all_records())
         logger.info(f"Found {len(jobs)} jobs in Google Sheet.")
 
@@ -93,7 +81,7 @@ class JobProcessor:
             logger.info(f"Found {len(jobs_df)} jobs with '{status}' status.")
         return jobs_df
 
-    def process_new_jobs(self):
+    def find_jobs_with_missing_contacts(self):
         """
         Process jobs with "New Job" and "Contact Required" status.
         For all new jobs, if email or LinkedIn contact is not provided, set status to "Contact Required"
@@ -106,46 +94,54 @@ class JobProcessor:
         
         has_email = jobs_df['Email'].str.strip() != ""
         has_linkedin_contact = jobs_df['LinkedIn Contact'].str.strip() != ""
-        jobs_df.loc[has_email | has_linkedin_contact, 'Status'] = 'Contact Ready'
         jobs_df.loc[~(has_email | has_linkedin_contact), 'Status'] = 'Contact Required'
 
         self.jobs_df.update(jobs_df)
 
-    def process_contact_ready_jobs(self):
+    def generate_content_for_jobs(self):
         """
-        For all jobs with "Contact Ready" status, generate custom contents and set status to "Content Generated"
+        For all jobs with custom content not generated, generate custom content and set status to "Content Generated"
         Wrapper: generate_custom_contents_wrapper
             Parameters:
             - job (Series): Pandas Series containing the details of a job.
             - openai_handler (OpenAIConnectorClass): Instance of OpenAIConnectorClass.
         """
 
-        jobs_df = self._get_jobs_with_status("Contact Ready")
-        # If content is already generated (check for the data in colmns 'Message Content', 'Message Subject', 'LinkedIn Note', 'Updated Job Description', 'Resume Content', 'Cover Letter Content'), then just update the status to "Content Generated"
-        content_generated_jobs_df = jobs_df[
-            (jobs_df['Message Content'].str.strip() != "") &
-            (jobs_df['Message Subject'].str.strip() != "") &
-            (jobs_df['LinkedIn Note'].str.strip() != "") &
-            (jobs_df['Resume'].str.strip() != "") &
-            (jobs_df['Cover Letter'].str.strip() != "")
+        # Fetch all jobs with either Message Content, Message Subject, LinkedIn Note, Resume, or Cover Letter missing
+        jobs_to_generate_content = self.jobs_df[
+            (self.jobs_df['Status'] == 'Contact Ready') & 
+            (
+                (self.jobs_df['Message Content'].str.strip() == "") |
+                (self.jobs_df['Message Subject'].str.strip() == "") |
+                (self.jobs_df['LinkedIn Note'].str.strip() == "") |
+                (self.jobs_df['Resume'].str.strip() == "") |
+                (self.jobs_df['Cover Letter'].str.strip() == "")
+            )
         ].copy()
 
-        if not content_generated_jobs_df.empty:
-            content_generated_jobs_df['Status'] = 'Content Generated'
-            jobs_df.update(content_generated_jobs_df)
-            self.jobs_df.update(jobs_df)
-            jobs_df = jobs_df[jobs_df['Status'] != 'Content Generated']
-
+        if jobs_to_generate_content.empty:
+            logger.info("No jobs with missing custom content found.")
+            return
+        
+        logger.info(f"Found {len(jobs_to_generate_content)} jobs with missing custom content.")
+        # Generate custom content for each job
         from src.openai_handler import OpenAIConnectorClass
-        openai_handler = OpenAIConnectorClass(
-            openapi_key=self.openai_api_key,
-            openai_url=self.openai_url,
-            openai_model=self.openai_model,
-        )
+        params = {
+            'openapi_key': self.OPENAI_API_KEY,
+            'openapi_url': self.OPENAI_URL,
+            'openapi_model': self.OPENAI_MODEL,
+            'resume_path': self.RESUME_PATH,
+            'cover_letter_path': self.COVER_LETTER_PATH
+        }
+        if self.USE_GMAIL:
+            params['email_template'] = self.EMAIL_CONTENT
+        if self.USE_LINKEDIN:
+            params['linkedin_note_template'] = self.LINKEDIN_NOTE_TEMPLATE
+        openai_handler = OpenAIConnectorClass(**params)
 
         def generate_custom_contents_wrapper(job: pd.Series, openai_handler: OpenAIConnectorClass) -> pd.Series:
             try:
-                generated_contents = openai_handler.generate_custom_contents(job)
+                generated_contents = openai_handler.generate_custom_content(job)
                 for key, value in generated_contents.items():
                     job[key] = value
                 job['Status'] = 'Content Generated'  # Set status if no error occurs
@@ -159,9 +155,8 @@ class JobProcessor:
             return job
         
 
-        if not jobs_df.empty:
-            jobs_df.progress_apply(lambda job: generate_custom_contents_wrapper(job, openai_handler), axis=1) # type: ignore
-            self.jobs_df.update(jobs_df)
+        jobs_to_generate_content.progress_apply(lambda job: generate_custom_contents_wrapper(job, openai_handler), axis=1) # type: ignore
+        self.jobs_df.update(jobs_to_generate_content)
 
     def process_content_generated_jobs(self):
         """
@@ -170,18 +165,18 @@ class JobProcessor:
         For all jobs with "Email Sent" or "LinkedIn Connection Sent" status, update the Google Sheet.
         """
         
-        jobs_df = self._get_jobs_with_status("Content Generated")
+        content_generated_jobs_df = self._get_jobs_with_status('Content Generated')
+        if self.USE_GMAIL:
+            email_jobs_df = content_generated_jobs_df[content_generated_jobs_df['Email'].str.strip() != ""].copy()
+            if not email_jobs_df.empty:
+                self.send_emails(email_jobs_df)
+                self.jobs_df.update(email_jobs_df)
 
-        email_jobs_df = jobs_df[jobs_df['Email'].str.strip() != ""].copy()
-        if not email_jobs_df.empty:
-            self.send_emails(email_jobs_df)
-            self.jobs_df.update(email_jobs_df)
-
-        linkedin_jobs_df = jobs_df[jobs_df['LinkedIn Contact'].str.strip() != ""].copy()
-        if not linkedin_jobs_df.empty:
-            self.send_linkedin_connections(linkedin_jobs_df)
-
-        
+        if self.USE_LINKEDIN:
+            linkedin_jobs_df = content_generated_jobs_df[content_generated_jobs_df['LinkedIn Contact'].str.strip() != ""].copy()
+            if not linkedin_jobs_df.empty:
+                self.send_linkedin_connections(linkedin_jobs_df)
+                self.jobs_df.update(linkedin_jobs_df)
 
     def send_emails(self, jobs_df: pd.DataFrame):
         """
@@ -192,7 +187,7 @@ class JobProcessor:
             - email_handler (EmailHandler): Instance of EmailHandler.
         """
         from src.email_handler import EmailHandler
-        email_handler = EmailHandler(self.gmail_address, self.gmail_password)
+        email_handler = EmailHandler(self.GMAIL_ADDRESS, self.GMAIL_PASSWORD)
         logger.info("Email Connection Established.")
         logger.info(f"Sending emails to {len(jobs_df)} contacts...")
         def send_email_wrapper(job: pd.Series, email_handler: EmailHandler) -> pd.Series:
@@ -223,8 +218,8 @@ class JobProcessor:
         
         from src.linkedin_handler import LinkedInConnectorClass
         logger.info("Logging into LinkedIn...")
-        linkedin_handler = LinkedInConnectorClass(self.chromedriver_path, self.interactive)
-        linkedin_handler.login(self.linkedin_username, self.linkedin_password)
+        linkedin_handler = LinkedInConnectorClass(self.CHROMEDRIVER_PATH, self.INTERACTIVE)
+        linkedin_handler.login(self.LINKEDIN_USERNAME, self.LINKEDIN_PASSWORD)
 
         logger.info("LinkedIn Connection Established.")
         logger.info(f"Sending LinkedIn connection requests to {len(jobs_df)} contacts...")

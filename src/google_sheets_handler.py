@@ -7,7 +7,7 @@ from gspread.exceptions import SpreadsheetNotFound
 
 
 class GoogleSheetsHandler:
-    def __init__(self, credentials_file_path: str, gsheet_name: Optional[str]="AIJobApply"):
+    def __init__(self, credentials_file_path: str):
         """
         Initialize GoogleSheets object and establish connection with Google Sheets.
         Parameters
@@ -26,16 +26,12 @@ class GoogleSheetsHandler:
             raise FileNotFoundError("Credentials file not found. Path provided: " + credentials_file_path)
         
         self.gc = gspread.service_account(filename=credentials_file)
-        self.gsheet_name = gsheet_name
 
 
-    def get_gsheet(self, gsheet_name: Optional[str]):
+    def get_gsheet(self, gsheet_name: str = "AIJobApply") -> gspread.Spreadsheet:
         """
         Get Google Sheet by name
         """
-        if gsheet_name is None:
-            gsheet_name = self.gsheet_name
-
         try:
             return self.gc.open(gsheet_name)
         except SpreadsheetNotFound:
@@ -43,7 +39,7 @@ class GoogleSheetsHandler:
         except Exception as e:
             raise ValueError(f"Error while getting Google Sheet: {str(e)}")
         
-    def update_gsheet_from_dataframe(self, dataframe: pd.DataFrame):
+    def update_gsheet_from_dataframe(self, dataframe: pd.DataFrame, gsheet_name: str):
         """
         Update Google Sheet with the given dataframe
         Parameters
@@ -52,7 +48,7 @@ class GoogleSheetsHandler:
             Dataframe to update Google Sheet with.
         """
         try:
-            gsheet = self.get_gsheet(self.gsheet_name)
+            gsheet = self.get_gsheet(gsheet_name)
             gsheet.sheet1.clear()
             gsheet.sheet1.update([dataframe.columns.values.tolist()] + dataframe.values.tolist())
         except Exception as e:
