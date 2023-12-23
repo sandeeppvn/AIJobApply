@@ -123,7 +123,7 @@ class JobProcessor:
         
         logger.info(f"Found {len(jobs_to_generate_content)} jobs with missing custom content.")
         # Generate custom content for each job
-        from src.langchain_handler import LangchainConnectorClass
+        from src.llm_handler import LLMConnectorClass
         params = {
             'llm_service': 'openai',
             'llm_api_key': self.LLM_API_KEY,
@@ -137,9 +137,9 @@ class JobProcessor:
         if self.USE_LINKEDIN:
             params['linkedin_note_template'] = self.LINKEDIN_NOTE
         
-        llm_handler = LangchainConnectorClass(**params)
+        llm_handler = LLMConnectorClass(**params)
 
-        def generate_custom_contents_wrapper(job: pd.Series, llm_handler: LangchainConnectorClass) -> pd.Series:
+        def generate_custom_contents_wrapper(job: pd.Series, llm_handler: LLMConnectorClass) -> pd.Series:
             try:
                 job['Description'] = llm_handler.generate_updated_job_description(job)
                 generated_contents = llm_handler.generate_custom_content(job)
