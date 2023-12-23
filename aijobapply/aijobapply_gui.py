@@ -1,7 +1,5 @@
 import json
 import os
-import platform
-import subprocess
 import tkinter as tk
 from re import T
 from threading import Thread
@@ -9,7 +7,8 @@ from tkinter import filedialog, messagebox, scrolledtext, ttk
 
 import docx
 import PyPDF2
-from aijobapply import run_application
+
+from aijobapply.main import run_application
 
 # Constants
 CACHE_FILE = "aijobapply_cache.json"
@@ -53,11 +52,47 @@ class AIJobApplyGUI:
     def create_sections(self, frame):
         # Section Definitions
         sections = {
-            "Gmail": {"start_row": 0, "start_column": 0, "fields": {"Gmail Address": ["GMAIL_ADDRESS", "text"], "Gmail Password": ["GMAIL_PASSWORD", "password"], "Email Content": ["EMAIL_CONTENT", "text_area"]}, "use_checkbox": True},
-            # "LinkedIn": {"start_row": 0, "start_column": 1, "fields": {"Chromedriver Path": ["CHROMEDRIVER_PATH", "select_file"], "LinkedIn Username": ["LINKEDIN_USERNAME", "text"], "LinkedIn Password": ["LINKEDIN_PASSWORD", "password"], "LinkedIn Note": ["LINKEDIN_NOTE", "text_area"], "Interactive Mode": ["INTERACTIVE", "checkbox"]}, "use_checkbox": True},
-            "LinkedIn": {"start_row": 0, "start_column": 1, "fields": {"Chromedriver Path": ["CHROMEDRIVER_PATH", "select_file"], "LinkedIn Username": ["LINKEDIN_USERNAME", "text"], "LinkedIn Password": ["LINKEDIN_PASSWORD", "password"], "LinkedIn Note": ["LINKEDIN_NOTE", "text_area"]}, "use_checkbox": True},
-            "Credentials": {"start_row": 1, "start_column": 0, "fields": {"Google API Credentials File": ["GOOGLE_API_CREDENTIALS_FILE", "select_file"], "Google Sheet Name": ["GOOGLE_SHEET_NAME", "text"], "OpenAI API Key": ["OPENAI_API_KEY", "text"]}, "use_checkbox": False},
-            "Documents": {"start_row": 1, "start_column": 1, "fields": {"Resume File": ["RESUME_PATH", "select_file"], "Cover Letter File": ["COVER_LETTER_PATH", "select_file"]}, "use_checkbox": False}
+            "Gmail": {
+                "start_row": 0,
+                "start_column": 0,
+                "fields": {
+                    "Gmail Address": ["GMAIL_ADDRESS", "text"],
+                    "Gmail Password": ["GMAIL_PASSWORD", "password"],
+                    "Email Content": ["EMAIL_CONTENT", "text_area"]
+                },
+                "use_checkbox": True
+            },
+            "LinkedIn": {
+                "start_row": 0,
+                "start_column": 1,
+                "fields": {
+                    "Chromedriver Path": ["CHROMEDRIVER_PATH", "select_file"],
+                    "LinkedIn Username": ["LINKEDIN_USERNAME", "text"],
+                    "LinkedIn Password": ["LINKEDIN_PASSWORD", "password"],
+                    "LinkedIn Note": ["LINKEDIN_NOTE", "text_area"]
+                },
+                "use_checkbox": True
+            },
+            "Credentials": {
+                "start_row": 1,
+                "start_column": 0,
+                "fields": {
+                    "Google API Credentials File": ["GOOGLE_API_CREDENTIALS_FILE", "select_file"],
+                    "Google Sheet Name": ["GOOGLE_SHEET_NAME", "text"],
+                    "LLM API Key": ["LLM_API_KEY", "text"],
+                    "LLM Model": ["LLM_MODEL", "text"]
+                },
+                "use_checkbox": False
+            },
+            "Documents": {
+                "start_row": 1,
+                "start_column": 1,
+                "fields": {
+                    "Resume File": ["RESUME_PATH", "select_file"],
+                    "Cover Letter File": ["COVER_LETTER_PATH", "select_file"]
+                },
+                "use_checkbox": False
+            }
         }
 
         # Create each section
@@ -205,54 +240,38 @@ class AIJobApplyGUI:
         self.save_cache(data)
 
         # Construct and run the command
-        gmail_commands = [
-            "--GMAIL_ADDRESS", data["GMAIL_ADDRESS"],
-            "--GMAIL_PASSWORD", data["GMAIL_PASSWORD"],
-            "--EMAIL_CONTENT", data.get("EMAIL_CONTENT", ""),
-        ]
-        linkedin_commands = [
-            "--LINKEDIN_USERNAME", data["LINKEDIN_USERNAME"],
-            "--LINKEDIN_PASSWORD", data["LINKEDIN_PASSWORD"],
-            "--LINKEDIN_NOTE", data.get("LINKEDIN_NOTE", ""),
-            "--CHROMEDRIVER_PATH", data["CHROMEDRIVER_PATH"],
-        ]
-        command = [
-            "aijobapply",
+        gmail_commands = {
+            "GMAIL_ADDRESS": data["GMAIL_ADDRESS"],
+            "GMAIL_PASSWORD": data["GMAIL_PASSWORD"],
+            "EMAIL_CONTENT": data["EMAIL_CONTENT"],
+        }
+        linkedin_commands = {
+            "CHROMEDRIVER_PATH": data["CHROMEDRIVER_PATH"],
+            "LINKEDIN_USERNAME": data["LINKEDIN_USERNAME"],
+            "LINKEDIN_PASSWORD": data["LINKEDIN_PASSWORD"],
+            "LINKEDIN_NOTE": data["LINKEDIN_NOTE"],
+            "INTERACTIVE": data["INTERACTIVE"] if "INTERACTIVE" in data else "False",
+        }
+        main_commands = {
+            "GOOGLE_API_CREDENTIALS_FILE": data["GOOGLE_API_CREDENTIALS_FILE"],
+            "GOOGLE_SHEET_NAME": data["GOOGLE_SHEET_NAME"],
+            "LLM_API_KEY": data["LLM_API_KEY"],
+            "LLM_MODEL": data["LLM_MODEL"],
+            "RESUME_PATH": data["RESUME_PATH"],
+            "COVER_LETTER_PATH": data["COVER_LETTER_PATH"],
+        }
 
-            "--GOOGLE_API_CREDENTIALS_FILE", data["GOOGLE_API_CREDENTIALS_FILE"],
-            "--GOOGLE_SHEET_NAME", data["GOOGLE_SHEET_NAME"],
-
-            # "--OPENAI_URL", data["OPENAI_URL"],
-            # "--OPENAI_MODEL", data["OPENAI_MODEL"],
-            "--OPENAI_API_KEY", data["OPENAI_API_KEY"],
-            "--OPENAI_URL", "https://api.openai.com/v1/",
-            "--OPENAI_MODEL", "gpt-4-0613",
-            
-            "--RESUME_PATH", data["RESUME_PATH"],
-            "--COVER_LETTER_PATH", data["COVER_LETTER_PATH"],
-
-        ]
         if data.get("USE_GMAIL", True):
-            command.extend(gmail_commands)
-            command.append("--USE_GMAIL")
+            main_commands.update(gmail_commands)
+            main_commands["USE_GMAIL"] = True
             
         if data.get("USE_LINKEDIN", True):
-            command.extend(linkedin_commands)
-            command.append("--USE_LINKEDIN")
-            if data.get("INTERACTIVE", True):
-                command.append("--INTERACTIVE")
+            main_commands.update(linkedin_commands)
+            main_commands["USE_LINKEDIN"] = True
+            if data.get("INTERACTIVE", False):
+                main_commands["INTERACTIVE"] = True
 
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
-                                   shell=True if platform.system() == "Windows" else False, 
-                                   text=True, bufsize=1)
-
-        while True:
-            output = process.stdout.readline()
-            if output == '' and process.poll() is not None:
-                break
-            if output:
-                output_text.insert(tk.END, output)
-                output_text.see(tk.END)
+        run_application(main_commands)
 
     @staticmethod
     def save_cache(data):

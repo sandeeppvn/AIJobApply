@@ -1,0 +1,23 @@
+
+Prompt: Concise Job Description Refinement
+
+Input: Raw Job Description
+Please read the raw job description provided within the triple backticks below:
+```
+{raw_job_description}
+```
+
+Job position: {position}
+
+Task: Generate a Concise and Streamlined Job Description
+Your task is to analyze the raw job description, understand its content thoroughly, and create an `updated_job_description`. This updated version should:
+
+1. Job Requirements and Role: Clearly and concisely define the essential requirements and the main responsibilities of the job role.
+
+2. Hard Skills: List only the necessary technical skills, programming languages, tools, and other hard skills required.
+
+3. Soft Skills: Include key soft skills such as communication, teamwork, and problem-solving abilities.
+
+4. Company Culture: Briefly highlight the company's values, mission, and vision as they relate to the role.
+
+The goal is to eliminate all redundant and non-essential information, resulting in a streamlined, clear, and concise job description that effectively communicates the crucial aspects of the position.

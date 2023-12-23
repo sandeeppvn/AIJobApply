@@ -1,6 +1,5 @@
 import argparse
 import os
-from ast import parse
 
 cwd = os.getcwd()
 os.environ["PYTHONPATH"] = cwd
@@ -10,15 +9,18 @@ from src.job_processor import JobProcessor
 from src.utils import validate_arguments
 
 
-def run_application(args):
+def run_application(args: dict) -> None:
     """
     Run the AI job application process.
 
-    Args:
-        args: Command line arguments
+    Parameters:
+    -----------
+    args: dict
+        Dictionary of arguments to run the application with.
 
-    Returns:
-        None
+    Returns:    
+    --------
+    None
 
     """
 
@@ -33,8 +35,6 @@ def run_application(args):
 def aijobapply_cli():
     """
     Command-line interface function for AI job application process.
-
-
     """
     parser = argparse.ArgumentParser(description="AI Job Application CLI")
     
@@ -53,15 +53,16 @@ def aijobapply_cli():
     parser.add_argument( "--GOOGLE_API_CREDENTIALS_FILE", type=str, default=None, help="Path to the credentials file for google api")
     parser.add_argument("--GOOGLE_SHEET_NAME", type=str, default="AIJobApply", help="Name of the google sheet to read jobs from")
     
-    parser.add_argument("--OPENAI_URL", type=str, default="https://api.openai.com/v1/", help="Openai url")
-    parser.add_argument("--OPENAI_API_KEY", type=str, default=None, help="Openai api key")
-    parser.add_argument("--OPENAI_MODEL", type=str, default=None, help="Openai model to use")
+    parser.add_argument("--LLM_URL", type=str, default="https://api.openai.com/v1/", help="LLM url")
+    parser.add_argument("--LLM_API_KEY", type=str, default=None, help="LLM api key")
+    parser.add_argument("--LLM_MODEL", type=str, default=None, help="LLM model to use")
 
     parser.add_argument("--RESUME_PATH", type=str, default=None, help="Path to resume")
     parser.add_argument("--COVER_LETTER_PATH", type=str, default=None, help="Path to cover letter")
     
     args = parser.parse_args()
-    run_application(args)
+    
+    run_application(vars(args))
 
 
 if __name__ == "__main__":

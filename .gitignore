@@ -176,3 +176,4 @@ job_applications/
 
 # .env file
 .env
+aijobapply_cache.json

@@ -3,11 +3,10 @@ import os
 from typing import Optional
 
 import pandas as pd
-from pytest import param
 from tqdm import tqdm
 
 from src.google_sheets_handler import GoogleSheetsHandler
-from src.utils import create_job_folder
+from src.utils import create_job_folder, get_file_content
 
 tqdm.pandas()
 logger = logging.getLogger(__name__)
@@ -17,7 +16,7 @@ class JobProcessor:
     """
     def __init__(
         self,
-        **kwargs,
+        kwargs: dict,
     ):
         """
         Initialize JobProcessor class.
@@ -104,12 +103,11 @@ class JobProcessor:
         Wrapper: generate_custom_contents_wrapper
             Parameters:
             - job (Series): Pandas Series containing the details of a job.
-            - openai_handler (OpenAIConnectorClass): Instance of OpenAIConnectorClass.
+            - LLM_handler (LLMConnectorClass): Instance of LLMConnectorClass.
         """
 
         # Fetch all jobs with either Message Content, Message Subject, LinkedIn Note, Resume, or Cover Letter missing
-        jobs_to_generate_content = self.jobs_df[
-            (self.jobs_df['Status'] == 'Contact Ready') & 
+        jobs_to_generate_content = self.jobs_df.loc[
             (
                 (self.jobs_df['Message Content'].str.strip() == "") |
                 (self.jobs_df['Message Subject'].str.strip() == "") |
@@ -117,7 +115,7 @@ class JobProcessor:
                 (self.jobs_df['Resume'].str.strip() == "") |
                 (self.jobs_df['Cover Letter'].str.strip() == "")
             )
-        ].copy()
+        ]
 
         if jobs_to_generate_content.empty:
             logger.info("No jobs with missing custom content found.")
@@ -125,23 +123,27 @@ class JobProcessor:
         
         logger.info(f"Found {len(jobs_to_generate_content)} jobs with missing custom content.")
         # Generate custom content for each job
-        from src.openai_handler import OpenAIConnectorClass
+        from src.langchain_handler import LangchainConnectorClass
         params = {
-            'openapi_key': self.OPENAI_API_KEY,
-            'openapi_url': self.OPENAI_URL,
-            'openapi_model': self.OPENAI_MODEL,
-            'resume_path': self.RESUME_PATH,
-            'cover_letter_path': self.COVER_LETTER_PATH
+            'llm_service': 'openai',
+            'llm_api_key': self.LLM_API_KEY,
+            'llm_api_url': self.LLM_API_URL,
+            'llm_model': self.LLM_MODEL,
+            'resume': get_file_content(self.RESUME_PATH),
+            'cover_letter': get_file_content(self.COVER_LETTER_PATH),
         }
         if self.USE_GMAIL:
             params['email_template'] = self.EMAIL_CONTENT
         if self.USE_LINKEDIN:
-            params['linkedin_note_template'] = self.LINKEDIN_NOTE_TEMPLATE
-        openai_handler = OpenAIConnectorClass(**params)
+            params['linkedin_note_template'] = self.LINKEDIN_NOTE
+        
+        llm_handler = LangchainConnectorClass(**params)
 
-        def generate_custom_contents_wrapper(job: pd.Series, openai_handler: OpenAIConnectorClass) -> pd.Series:
+        def generate_custom_contents_wrapper(job: pd.Series, llm_handler: LangchainConnectorClass) -> pd.Series:
             try:
-                generated_contents = openai_handler.generate_custom_content(job)
+                job['Description'] = llm_handler.generate_updated_job_description(job)
+                generated_contents = llm_handler.generate_custom_content(job)
+                
                 for key, value in generated_contents.items():
                     job[key] = value
                 job['Status'] = 'Content Generated'  # Set status if no error occurs
@@ -155,7 +157,7 @@ class JobProcessor:
             return job
         
 
-        jobs_to_generate_content.progress_apply(lambda job: generate_custom_contents_wrapper(job, openai_handler), axis=1) # type: ignore
+        jobs_to_generate_content.progress_apply(lambda job: generate_custom_contents_wrapper(job, LLM_handler), axis=1) # type: ignore
         self.jobs_df.update(jobs_to_generate_content)
 
     def process_content_generated_jobs(self):

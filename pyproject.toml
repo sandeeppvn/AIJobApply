@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "AIJobApply"
-version = "2.0.1"
+version = "3.0.1"
 description = "Package to apply for jobs automatically and send emails"
 authors = [{name = "Sandeeppvn", email = "sandeeppvn@gmail.com"}]
 readme = "README.md"
@@ -20,6 +20,8 @@ dependencies = [
     "pandas==2.1.2",
     "selenium==4.16.0",
     "python-docx==1.1.0",
+    "tk==0.1.0",
+    "langchain==0.0352",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -30,4 +32,7 @@ classifiers = [
 homepage =  "https://github.com/sandeeppvn/AIJobApply"
 
 [project.scripts]
-aijobapply = "src.main:aijobapply_cli"
+aijobapply = "aijobapply.main:aijobapply_cli"
+
+[project.entry-points.console_scripts]
+aijobapply-cli = "aijobapply.main:aijobapply_cli"

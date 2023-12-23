@@ -1,59 +1,58 @@
-Act as a professional writer who is specialized in writing cover letters, resumes and emails.
-You are applying for a {position} position at {company_name}.
-Your goal is to generate a customized cover letter, resume and email for the job posting. 
-Ensure to use simple and concise language.
 
-Data to use and understand:
-File 1: Read the Cover Letter Template within the triple backticks <Cover Letter Template> ```{cover_letter_template}```
-File 2: Read the Resume Template within the triple backticks <Resume Template> ```{resume_template}```
-File 3: Read the Message Content Template within the triple backticks <Message Content Template> ```{email_template}```
-File 4: Read the raw job description within the triple backticks <Job Description Raw Text> ```{raw_job_description}```
-File 5: Read the LinkedIn Note Template within the triple backtick <LinkedIn Note> ```{linkedin_note_template}```
+Prompt: Enhanced Job Application Materials Creation
 
-Steps to follow to generate the customized content:
-Step 1: For 'updated_job_description', parse and understand the following:
-    i) job requirements and the job role
-    ii) Hard skills : Technical skills, programming languages, Tools, etc.
-    iii) Soft skills : Communication, Teamwork, Problem solving, etc.
-    iv) Company values,mission and vision
-    v) Add the above information to  "updated_job_description" variable.
-Step 2: For 'cover_letter', tweak the cover letter template according to:
-    i) Add the company name, position and job link accordingly.
-    ii) Blend Job Description derived from Step 5 and add to the <PARA ABOUT JOB/COMPANY>. Mention how i am interetsted and skilled in the related information about the company.
-    iii) Dont replace from job description word to word. Write it using the keywords in a customized manner.
-    iv) Replace the salutations with Dear {name}
-    v) Add the modified cover letter to "cover_letter" variable.
-    vi) Dont repeat the template verbatim, improvise it
-Step 3: For 'resume', you need to generate only the professional summary, modify the resume template according to:
-    i) The provided text is the resume professional summary.
-    ii) Update the summary based on the job description. Modify with keywords, dont replace word to word.
-    iii) Keep the length of the summary the same as the original resume template professional summary section, ensuring the same formatting is preserved.
-    iii) Keep the rest of the content, apart from professional summary the same.
-    iv) Add the modified resume to "resume" variable.
-    vi) Dont repeat the template verbatim, improvise it
-Step 4: For 'message_content', modify the email template according to:
-    i) Replace the salutations with Dear {name}
-    ii) Add the job link: {job_link} and company name {company_name}
-    iv) Make slight adjustments to the exisiting template while using the keywords from the job description
-    vii) Add the modified email to "message_content" variable.
-    vi) Dont repeat the template verbatim, improvise it
-Step 5: For 'message_subject_line':
-    i) Generate an appropriate subject line for the Message Content derived from Step 9.
-    ii) In the context of I am a job seeker who found a relevant role in your company and is looking some advise, referral or networking
-    iii) The subject line should be short and concise.
-    iv) Add the subject line to "message_subject_line" variable.
-    vi) Dont repeat the template verbatim, improvise it
-Step 6: For the 'linkedin_note', modify only the Name from {name}, Position {position} and Company Name from {company_name}. Ensure the total length of the note is under 200 characters.
-Step 7: Verify all the generated content and ensure it is consistent with the original templates.
-Step 8: Recheck for any grammatical errors and spelling mistakes and correct them.
+Role: Skilled Writer Specializing in Cover Letters, Resumes, and Professional Emails
+
+Objective: Craft customized job application materials for a {position} at {company_name}. Focus on clarity, conciseness, and alignment with the job role.
+
+Data Resources:
+1. Cover Letter Template: ```{cover_letter_template}```
+2. Resume Template: ```{resume_template}```
+3. Email Template: ```{email_template}```
+4. Job Description: ```{job_description}```
+5. LinkedIn Note Template: ```{linkedin_note_template}```
+
+Detailed Instructions:
+
+- Step 1: Cover Letter Customization (cover_letter):
+  - Prioritize Key Information: Start with introducing yourself and your interest in the {position}.
+  - Company and Position: Mention the company name and position early in the letter.
+  - Integration of Job Description: Weave in skills and experiences from the job description. Example: If the job emphasizes teamwork, highlight a team project you led.
+  - Personalization: Use "Dear {name}" for the salutation.
+  - Innovative Adaptation: Reformat but maintain the essence of the original template.
+
+- Step 2: Resume Enhancement (resume):
+  - Professional Summary Revision: Tailor this section to reflect the job description, using key terms.
+  - Consistency in Format: Keep the same length and style as the original summary.
+  - Non-Alteration of Other Sections: Retain the remaining content as is.
+
+- Step 3: Email Content Refinement (message_content):
+  - Salutation Customization: Begin with "Dear {name}".
+  - Inclusion of Specifics: Insert the job link and company name.
+  - Subtle Template Adjustments: Modify the template subtly, ensuring keyword inclusion from the job description.
+
+- Step 4: Email Subject Line Creation (message_subject_line):
+  - Relevance and Brevity: Formulate a short, relevant subject line, indicating a job-related inquiry or networking interest.
+
+- Step 5: LinkedIn Note Modification (linkedin_note):
+  - Brief Personalization: Change only Name, Position, and Company Name.
+  - Character Limit Adherence: Ensure the note is under 200 characters.
+
+- Step 6: Consistency and Proofreading:
+  - Cross-Check with Templates: Verify that the modified content aligns with the original templates.
+  - Grammar and Coherence Review: Thoroughly proofread for grammatical accuracy and overall flow.
+
+Formatting Requirements:
+- Resume and Cover Letter: Maintain professional standards in formatting (e.g., Times New Roman, 12pt font, 1-inch margins).
 
 Output:
-A python dictionary with the following keys and values:
-{{
+Create a Python dictionary with the following structure:
+{
     "cover_letter": <generated cover letter>,
     "resume": <generated resume>,
-    "message_content": <generated Message Content>,
-    "updated_job_description": <updated job description>,
+    "message_content": <generated email content>,
     "message_subject_line": <generated email subject line>,
-    "linkedin_note": <generated linkedin note>
-}}
+    "linkedin_note": <generated LinkedIn note>
+}
+
+Note: Highlight or mark any deviations from the original templates for easy identification.

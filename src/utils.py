@@ -77,14 +77,16 @@ def load_prompt(prompt_name: str, prompt_args: dict) -> str:
     Returns:
     - str: Prompt content in an f-string format.
     """
-    if prompt_name == "generate_custom_contents":
-        # Load the content from the file "generate_custom_contents.txt" and convert it to an f-string
-        with open("prompts/generate_custom_contents.txt", "r") as f:
-            prompt = f.read()
-    else:
-        raise ValueError(f"Invalid prompt name: {prompt_name}")
+    prompt_path = f"prompts/{prompt_name}.txt"
+    try:
+        with open(prompt_path, "r") as f:
+            prompt = f.read().format(**prompt_args)
+    except FileNotFoundError:
+        raise ValueError(f"Prompt file not found: {prompt_path}")
+    except KeyError as e:
+        raise ValueError(f"Missing argument in prompt_args: {str(e)}")
 
-    return prompt.format(**prompt_args)
+    return prompt
 
 
 def create_rich_text_dict(content: str) -> dict:
@@ -127,17 +129,7 @@ def create_job_folder(job:pd.Series, destination:str = "job_applications"):
 
 
 
-def get_argument_value(arg_name, args):
-    """
-    Check if the argument is provided via CLI or as an environment variable.
-    Raise an error if the argument is not found.
-    """
-    arg_value = getattr(args, arg_name, None) or os.getenv(arg_name)
-    if arg_value is None:
-        raise ValueError(f"Required argument '{arg_name}' not provided.")
-    return arg_value
-
-def validate_arguments(args) -> dict:
+def validate_arguments(args: dict) -> dict:
     """
     Validate the arguments passed to the CLI. 
     Check if all arguments are present and valid either from the CLI or as an environment variable.
@@ -147,16 +139,10 @@ def validate_arguments(args) -> dict:
     validate_args = {}
 
     required_args = {
-        # Gmail arguments
-        "USE_GMAIL": "Use Gmail to send emails",
-
-        # LinkedIn arguments
-        "USE_LINKEDIN": "Use LinkedIn to send connection requests",
-
-        # OpenAI arguments
-        "OPENAI_API_KEY": "Openai api key",
-        "OPENAI_MODEL": "Openai model to use",
-        "OPENAI_URL": "Openai url",
+        # LLM arguments
+        "LLM_API_KEY": "LLM api key",
+        "LLM_MODEL": "LLM model to use",
+        "LLM_URL": "LLM url",
 
         # Google Sheets arguments
         "GOOGLE_API_CREDENTIALS_FILE": "Path to the credentials file for google api",
@@ -178,27 +164,34 @@ def validate_arguments(args) -> dict:
         "CHROMEDRIVER_PATH": "Path to the selenium driver",
         "LINKEDIN_USERNAME": "LinkedIn username",
         "LINKEDIN_PASSWORD": "LinkedIn password",
-        "INTERACTIVE": "Run in interactive mode/show browser"
+        "LINKEDIN_NOTE": "LinkedIn note",
     }
 
     # Check if all required arguments are provided
     for arg_name, arg_description in required_args.items():
-        if arg_name not in args.__dict__ and os.getenv(arg_name) is None:
+        if arg_name not in args and os.getenv(arg_name) is None:
             raise ValueError(f"Required argument '{arg_name}' not provided.")
-        validate_args[arg_name] = get_argument_value(arg_name, args)
+        validate_args[arg_name] = args[arg_name] if arg_name in args else os.getenv(arg_name)
         
     # Check if all Gmail arguments are provided
-    if args.USE_GMAIL:
+    if args["USE_GMAIL"]:
+        validate_args["USE_GMAIL"] = True
         for arg_name, arg_description in gmail_args.items():
-            if arg_name not in args.__dict__ and os.getenv(arg_name) is None:
+            if arg_name not in args and os.getenv(arg_name) is None:
                 raise ValueError(f"Gmail argument '{arg_name}' not provided.")
-            validate_args[arg_name] = get_argument_value(arg_name, args)
+            validate_args[arg_name] = args[arg_name] if arg_name in args else os.getenv(arg_name)
             
     # Check if all LinkedIn arguments are provided
-    if args.USE_LINKEDIN:
+    if args["USE_LINKEDIN"]:
+        validate_args["USE_LINKEDIN"] = True
         for arg_name, arg_description in linkedin_args.items():
-            if arg_name not in args.__dict__ and os.getenv(arg_name) is None:
+            if arg_name not in args and os.getenv(arg_name) is None:
                 raise ValueError(f"LinkedIn argument '{arg_name}' not provided.")
-            validate_args[arg_name] = get_argument_value(arg_name, args)
+            validate_args[arg_name] = args[arg_name] if arg_name in args else os.getenv(arg_name)
+
+        if args["INTERACTIVE"]:
+            validate_args["INTERACTIVE"] = True
+        else:
+            validate_args["INTERACTIVE"] = False
 
     return validate_args
