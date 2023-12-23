@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.openai_handler import OpenAIConnectorClass
+from src.llm_handler import OpenAIConnectorClass
 
 
 @pytest.fixture
