@@ -6,7 +6,6 @@ from threading import Thread
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 
 import docx
-import PyPDF2
 
 from aijobapply.main import run_application
 
@@ -69,7 +68,7 @@ class AIJobApplyGUI:
                     "Chromedriver Path": ["CHROMEDRIVER_PATH", "select_file"],
                     "LinkedIn Username": ["LINKEDIN_USERNAME", "text"],
                     "LinkedIn Password": ["LINKEDIN_PASSWORD", "password"],
-                    "LinkedIn Note": ["LINKEDIN_NOTE", "text_area"]
+                    # "LinkedIn Note": ["LINKEDIN_NOTE", "text_area"]
                 },
                 "use_checkbox": True
             },
@@ -80,7 +79,8 @@ class AIJobApplyGUI:
                     "Google API Credentials File": ["GOOGLE_API_CREDENTIALS_FILE", "select_file"],
                     "Google Sheet Name": ["GOOGLE_SHEET_NAME", "text"],
                     "LLM API Key": ["LLM_API_KEY", "text"],
-                    "LLM Model": ["LLM_MODEL", "text"]
+                    "LLM Model": ["LLM_MODEL", "text"],
+                    "LLM API URL": ["LLM_API_URL", "text"]
                 },
                 "use_checkbox": False
             },
@@ -89,6 +89,7 @@ class AIJobApplyGUI:
                 "start_column": 1,
                 "fields": {
                     "Resume File": ["RESUME_PATH", "select_file"],
+                    "Resume Summary": ["RESUME_PROFESSIONAL_SUMMARY", "text_area"],
                     "Cover Letter File": ["COVER_LETTER_PATH", "select_file"]
                 },
                 "use_checkbox": False
@@ -138,8 +139,10 @@ class AIJobApplyGUI:
             var.set(True)
             checkbox = ttk.Checkbutton(frame, text=f"Use {frame['text']}", variable=var, command=toggle_section)
             checkbox.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+            self.entries[f"USE_{frame['text'].upper()}"] = var  # Store the checkbox variable
 
-        # Create the fields
+
+        # Create the fieldsx
         row = 1 if use_checkbox else 0
         for label_text, field in fields.items():
             field_name, field_type = field
@@ -173,25 +176,14 @@ class AIJobApplyGUI:
         path = filedialog.askopenfilename()
         if path:
             try:
-                # Ensure the file is .txt, .docx, or .pdf
-                if not path.endswith((".txt", ".docx", ".pdf")):
-                    messagebox.showerror("Invalid File", "Only .txt, .docx, and .pdf files are supported.")
+                # Ensure the file is .docx only
+                if not path.endswith(".docx"):
+                    messagebox.showerror("Invalid File", "Only .docx files are supported.")
                     return
                 
-                # Read the file content based on the file type
-                if path.endswith(".txt"):
-                    with open(path, "r", encoding="utf-8") as file:
-                        content = file.read()
-                elif path.endswith(".pdf"):
-                    with open(path, "rb") as file:
-                        pdf_reader = PyPDF2.PdfReader(file)
-                        content = "\n".join([pdf_reader.pages[page].extract_text() for page in range(len(pdf_reader.pages))])
-                elif path.endswith(".docx"):
-                    doc = docx.Document(path)
-                    content = "\n".join([paragraph.text for paragraph in doc.paragraphs])
-                else:
-                    raise ValueError(f"Invalid file type: {path}")
-                
+                # Get the content of the file
+                content = "\n".join([paragraph.text for paragraph in docx.Document(path).paragraphs])
+
                 # Insert the content into the text widget
                 text_widget.delete("1.0", "end-1c")
                 text_widget.insert("1.0", content)
@@ -236,20 +228,26 @@ class AIJobApplyGUI:
 
     def run_aijobapply(self, output_text):
         data = {field: (entry.get() if isinstance(entry, tk.Entry) else entry.get("1.0", "end-1c")) 
-                for field, entry in self.entries.items()}
+                for field, entry in self.entries.items() if not isinstance(entry, tk.BooleanVar)}
+        
+        # Add checkbox states to data
+        for field, entry in self.entries.items():
+            if isinstance(entry, tk.BooleanVar):
+                data[field] = entry.get()
+
         self.save_cache(data)
 
         # Construct and run the command
         gmail_commands = {
             "GMAIL_ADDRESS": data["GMAIL_ADDRESS"],
             "GMAIL_PASSWORD": data["GMAIL_PASSWORD"],
-            "EMAIL_CONTENT": data["EMAIL_CONTENT"],
+            # "EMAIL_CONTENT": data["EMAIL_CONTENT"],
         }
         linkedin_commands = {
             "CHROMEDRIVER_PATH": data["CHROMEDRIVER_PATH"],
             "LINKEDIN_USERNAME": data["LINKEDIN_USERNAME"],
             "LINKEDIN_PASSWORD": data["LINKEDIN_PASSWORD"],
-            "LINKEDIN_NOTE": data["LINKEDIN_NOTE"],
+            # "LINKEDIN_NOTE": data["LINKEDIN_NOTE"],
             "INTERACTIVE": data["INTERACTIVE"] if "INTERACTIVE" in data else "False",
         }
         main_commands = {
@@ -257,15 +255,17 @@ class AIJobApplyGUI:
             "GOOGLE_SHEET_NAME": data["GOOGLE_SHEET_NAME"],
             "LLM_API_KEY": data["LLM_API_KEY"],
             "LLM_MODEL": data["LLM_MODEL"],
+            "LLM_API_URL": data["LLM_API_URL"],
             "RESUME_PATH": data["RESUME_PATH"],
+            "RESUME_PROFESSIONAL_SUMMARY": data["RESUME_PROFESSIONAL_SUMMARY"] if "RESUME_PROFESSIONAL_SUMMARY" in data else "",
             "COVER_LETTER_PATH": data["COVER_LETTER_PATH"],
         }
 
-        if data.get("USE_GMAIL", True):
+        if data.get("USE_GMAIL", False):
             main_commands.update(gmail_commands)
             main_commands["USE_GMAIL"] = True
             
-        if data.get("USE_LINKEDIN", True):
+        if data.get("USE_LINKEDIN", False):
             main_commands.update(linkedin_commands)
             main_commands["USE_LINKEDIN"] = True
             if data.get("INTERACTIVE", False):

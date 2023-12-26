@@ -45,13 +45,13 @@ class JobProcessor:
             self.generate_content_for_jobs()
 
             logger.info("Updating Google Sheet to reflect content generation status...")
-            self.gc.update_gsheet_from_dataframe(self.jobs_df)
+            self.gc.update_gsheet_from_dataframe(self.jobs_df, self.GOOGLE_SHEET_NAME)
 
             logger.info("Processing Content Generated jobs...")
             self.process_content_generated_jobs()
 
             logger.info("Updating Google Sheet to reflect email and LinkedIn connection status...")
-            self.gc.update_gsheet_from_dataframe(self.jobs_df)
+            self.gc.update_gsheet_from_dataframe(self.jobs_df, self.GOOGLE_SHEET_NAME)
             
             logger.info("Job processing complete.")
 
@@ -113,6 +113,7 @@ class JobProcessor:
                 (self.jobs_df['Message Subject'].str.strip() == "") |
                 (self.jobs_df['LinkedIn Note'].str.strip() == "") |
                 (self.jobs_df['Resume'].str.strip() == "") |
+                (self.jobs_df['Missing Keywords'].str.strip() == "") |
                 (self.jobs_df['Cover Letter'].str.strip() == "")
             )
         ]
@@ -123,33 +124,33 @@ class JobProcessor:
         
         logger.info(f"Found {len(jobs_to_generate_content)} jobs with missing custom content.")
         # Generate custom content for each job
-        from src.llm_handler import LLMConnectorClass
-        params = {
-            'llm_service': 'openai',
-            'llm_api_key': self.LLM_API_KEY,
-            'llm_api_url': self.LLM_API_URL,
-            'llm_model': self.LLM_MODEL,
-            'resume': get_file_content(self.RESUME_PATH),
-            'cover_letter': get_file_content(self.COVER_LETTER_PATH),
+        from src.LLM_handler import LLMConnectorClass
+        llm_args = {
+            'api_key': self.LLM_API_KEY,
+            # 'LLM_api_url': self.LLM_API_URL,
+            'model_name': self.LLM_MODEL,
         }
-        if self.USE_GMAIL:
-            params['email_template'] = self.EMAIL_CONTENT
-        if self.USE_LINKEDIN:
-            params['linkedin_note_template'] = self.LINKEDIN_NOTE
-        
-        llm_handler = LLMConnectorClass(**params)
+        prompt_args = {
+            'resume_template': get_file_content(self.RESUME_PATH),
+            'cover_letter_template': get_file_content(self.COVER_LETTER_PATH),
+            'resume_professional_summary': self.RESUME_PROFESSIONAL_SUMMARY,
+            # 'email_template': self.EMAIL_CONTENT if self.USE_GMAIL else "",
+            # 'linkedin_note_template': self.LINKEDIN_NOTE if self.USE_LINKEDIN else "",
 
-        def generate_custom_contents_wrapper(job: pd.Series, llm_handler: LLMConnectorClass) -> pd.Series:
+        }
+
+        LLM_handler = LLMConnectorClass(llm_args, prompt_args, self.USE_GMAIL, self.USE_LINKEDIN)
+
+        def generate_custom_contents_wrapper(job: pd.Series, LLM_handler: LLMConnectorClass) -> pd.Series:
             try:
-                job['Description'] = llm_handler.generate_updated_job_description(job)
-                generated_contents = llm_handler.generate_custom_content(job)
+                generated_contents = LLM_handler.generate_custom_content(job)
                 
                 for key, value in generated_contents.items():
                     job[key] = value
                 job['Status'] = 'Content Generated'  # Set status if no error occurs
                 logger.info(f"Custom contents generated for job at Company Name {job['Company Name']}")
 
-                create_job_folder(job) # type: ignore
+                create_job_folder(job,self.RESUME_PATH) # type: ignore
 
             except Exception as e:
                 logger.error(f"Failed to generate custom contents for job at Company Name {job['Company Name']}. Error: {str(e)}")

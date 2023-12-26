@@ -1,184 +1,197 @@
-import json
 import logging
+from typing import Dict
 
-import openai
+import pandas as pd
+from gptrim import trim
+from langchain.callbacks import get_openai_callback
+from langchain.chat_models import ChatOpenAI
+from langchain.output_parsers import PydanticOutputParser
+from langchain.prompts import PromptTemplate
+from pydantic import BaseModel, Field
 
-LLM = openai
-
-from src.utils import generate_function_description, load_prompt
-
+# Configure logging for the application.
 logging.basicConfig(level=logging.INFO)
 
-from typing import Optional
-
+class CustomJobApplicationMaterials(BaseModel):
+    """
+    Model for custom job application materials.
+    """
+    cover_letter: str = Field(description="Customized Cover Letter")
+    resume_summary: str = Field(description="Enhanced Resume Summary")
+    missing_keywords: str = Field(description="Missing Keywords")
+    email_content: str = Field(description="Refined Email Content")
+    email_subject: str = Field(description="Email Subject Line")
+    linkedin_note: str = Field(description="LinkedIn Note")
 
 class LLMConnectorClass:
-    def __init__(self, LLM_api_key: str, LLM_api_url: str, LLM_model: str, resume: str, cover_letter: str, email_template: Optional[str] = None, linkedin_note_template: Optional[str] = None):
+    """
+    Connects with a Language Learning Model (LLM) to generate custom content.
+    """
+    prompt_template = """
+        Prompt: Job Description Refinement and Application Materials Creation
+
+        Task Overview: 
+        - Start with analyzing the job description. 
+        - Then, create specific application materials.
+        Return only the final output json with all the keys and values populated.
+
+        Step 1: Ana;lyze the Job Description
+        - Input: Raw Job Description: {job_description}, Job Title: {position}
+        - Sub-steps:
+            1.1 Analyze the raw job description for key roles and responsibilities.
+            1.2 Identify and list essential hard skills such as technical skills and tools.
+            1.3 Identify soft skills like communication, teamwork, problem-solving.
+            1.4 Understand the company's culture, values, mission, and vision.
+
+        Step 2: Craft a Customized Cover Letter
+        - Use the updated job description from Step 1.
+        - Sub-steps:
+            2.1 Start with the Cover Letter Template: ``` {cover_letter_template} ```
+            2.2 Integrate elements from the updated job description relevant to the {position}.
+            2.3 Personalize the introduction, emphasizing your interest in the role.
+            2.4 Tailor the body of the letter to reflect your matching skills and experiences.
+            2.5 Conclude with a strong, relevant closing statement.
+            2.6 Ensure it is under 250
+        - Focus: Clarity, relevance, and personalization.
+        - Place the output in the key "cover_letter" in the output JSON.
+
+        Step 3: Enhance the Resume
+        - Reference the updated job description from Step 1.
+        - Sub-steps:
+            3.1 Utilize the Resume Template: ``` {resume_template} ``` and the Resume Professional Summary: ``` {resume_professional_summary} ```
+            3.2 Revise the professional summary to align with the new job description. Have a statement "Seeking a {position} at {company_name} ..." in it and provide it in the "resume_summary" key.
+            3.3 Ensure the resume summary is under 75 words.
+            3.4 To Update the skills and experiences sections to reflect relevant qualifications find the missing skills and keywords not present in the resume. 
+            Provide the missing keywords in the "missing_keywords" key.
+        - Aim: Reflect the key aspects of the job description accurately.
+        - Place the outputs in the keys "resume_summary" and "missing_keywords" in the output JSON.
+
+        Step 4: Compose a Professional Email
+        - Sub-steps:
+            4.1 Based on the job description, draft a professional email to the recruiter or hiring manager with content from the cover letter.
+            4.2 Create a personalized greeting addressing the recipient by name ``` Dear {name}, ```
+            4.3 Write a concise email body, mentioning the job link and company name.
+            4.4 Develop a subject line that is both relevant and attention-grabbing. It should be under 100 characters.
+        - Objective: Clear and professional email communication.
+        - Place the output in the keys "email_content" and "email_subject" in the output JSON.
+
+        Step 5: Compose a LinkedIn Note
+        -Use the following template:
+            Dear {name},
+            I am interested in an open {position} role at {company_name}. I'd be grateful to connect
+            and discuss my skill and experience alignment. I look forward to hearing from you.
+        - Place the output in the key "linkedin_note" in the output JSON.
+
+        Output: 
+        - Present the output in a JSON format, as per {format_instructions}.
+    """
+
+
+    def __init__(self, llm_args: dict, prompt_args: dict, use_email: bool = True, use_linkedin: bool = True):
         """
-        Initialize LLM object and set API key.
-
-        Parameters:
-        - LLM_api_key (str): LLM API key.
-        - LLM_api_url (str): LLM API url.
-        - LLM_model (str): LLM model to use.
-        - resume (str): Resume template.
-        - cover_letter (str): Cover letter template.
-        - email_template (str): Email template.
-        - linkedin_note_template (str): LinkedIn note template.
-        """
-        LLM.api_key = LLM_api_key
-        LLM.api_base = LLM_api_url
-        self.model = LLM_model
-
-        self.resume_template = resume
-        self.cover_letter_template = cover_letter
-        self.email_template = email_template
-        self.linkedin_note_template = linkedin_note_template
-
-
-    def query_prompt(self, prompt: str, function_description: Optional[list] = None):
-        """
-        Query the LLM API with a given prompt.
+        Initializes the connector with LLM and prompt configurations.
 
         Args:
-        - prompt (str): The prompt to be sent to the API.
-        - function_description (list): List of dictionaries describing the functions to be used.
+            llm_args (dict): Configuration for LLM (API key and model name).
+            prompt_args (dict): Templates and other arguments for the prompts.
+            use_email (bool): Indicates if email template is to be used.
+            use_linkedin (bool): Indicates if LinkedIn note template is to be used.
+        """
+        self._llm_client = ChatOpenAI(
+            api_key=llm_args["api_key"],
+            model_name=llm_args["model_name"],
+        )
+        self._prompt_args = prompt_args
+        self._use_email = use_email
+        self._use_linkedin = use_linkedin
+
+    def generate_custom_content(self, job: pd.Series) -> Dict[str, str]:
+        """
+        Generates custom content based on the job data.
+
+        Args:
+            job (pd.Series): Job data used to generate custom content.
 
         Returns:
-        - Output from the LLM API. It can be a string or a dictionary.
+            Dict[str, str]: Generated custom content.
         """
-        try:
-            messages = [{"role": "user", "content": prompt}]
-            if function_description:
-                response = LLM.ChatCompletion.create(
-                    model=self.model,
-                    messages=messages,
-                    temperature=0,
-                    functions=function_description,
-                    function_call="auto",
-                )
-            else:
-                response = LLM.chat.Completion.create(
-                    model=self.model,
-                    prompt=prompt,
-                    temperature=0,
-                )
-            output = response.choices[0].message  # type: ignore
-            if output.get("function_call"):
-                function_name = output.function_call.name
-                if function_name != "generate_custom_contents_helper":
-                    raise ValueError(f"Function name {function_name} not found in the list of available functions.")
-                function_call = eval(f"self.{function_name}")
+        prompt_args = self._create_prompt_arguments(job)
+        output_parser = self._select_output_parser()
+        prompt = self._construct_prompt(prompt_args, output_parser)
+        chain = prompt | self._llm_client | output_parser
 
-                function_arguments = json.loads(output.function_call.arguments)
-                output = function_call(**function_arguments)
+        with get_openai_callback() as callback:
+            response_raw = chain.invoke(prompt_args)
+            response = response_raw.model_dump()
+            logging.info(f"Tokens used: {callback}")
 
-                return output
-
-            return output["content"]
-        except Exception as e:
-            logging.error(f"Error querying LLM API: {e}")
-            return {}
-
-    def generate_updated_job_description(self, job) -> str:
-        """
-        Generate an updated job description based on given inputs.
-        - job: The pandas Series containing the job information.
-
-        Returns:
-        - str: Updated job description.
-        """
-
-        prompt_args = {
-            "raw_job_description": job["Description"],
-            "position": job["Position"],
+        # Update response with proper keys.
+        return {
+            "Cover Letter": response["cover_letter"],
+            "Resume": response["resume_summary"],
+            "Missing Keywords": response["missing_keywords"],
+            "Message Content": response["email_content"],
+            "Message Subject": response["email_subject"],
+            "LinkedIn Note": response["linkedin_note"],
         }
 
-        prompt = load_prompt(
-            prompt_name="generate_updated_job_description",
-            prompt_args=prompt_args,
-        )
-
-        try:
-            response = self.query_prompt(prompt)
-            return response
-        except Exception as e:
-            logging.error(f"Error querying LLM API: {e}")
-            return ""
-
-    def generate_custom_content(self, job) -> dict:
+    def _create_prompt_arguments(self, job: pd.Series) -> Dict[str, str]:
         """
-        Generate customized content for email, cover letter, and resume based on given inputs.
-        - job: The pandas Series containing the job information.
+        Creates prompt arguments from job data.
+
+        Args:
+            job (pd.Series): Job data.
 
         Returns:
-        - dict: Customized contents for email, cover letter, resume, updated job description, message subject line and linkedin note
+            Dict[str, str]: Arguments for the prompt.
         """
-
         prompt_args = {
-            "job_description": job["Description"],
+            "job_description": trim(job["Description"]),
             "position": job["Position"],
             "company_name": job["Company Name"],
-            "job_link": job["Link"],
-            "name": job["Name"],
-            "resume_template": self.resume_template,
-            "cover_letter_template": self.cover_letter_template,
+            "name": job['Name'],
+            "cover_letter_template": self._prompt_args["cover_letter_template"],
+            "resume_template": self._prompt_args["resume_template"],
+            # "email_template": self._prompt_args["email_template"] if self._use_email else "",
+            # "linkedin_note_template": self._prompt_args["linkedin_note_template"] if self._use_linkedin else "",
         }
 
-        if self.email_template:
-            prompt_args["email_template"] = self.email_template
-        else:
-            prompt_args["email_template"] = ""
-        if self.linkedin_note_template:
-            prompt_args["linkedin_note_template"] = self.linkedin_note_template
-        else:
-            prompt_args["linkedin_note_template"] = ""
-        
-        
-        prompt = load_prompt(
-            prompt_name="generate_custom_content",
-            prompt_args=prompt_args,
+        return prompt_args
+
+    @staticmethod
+    def _construct_prompt(args: Dict[str, str], output_parser: PydanticOutputParser) -> PromptTemplate:
+        """
+        Constructs the prompt template.
+
+        Args:
+            args (Dict[str, str]): Arguments for the prompt.
+            output_parser (PydanticOutputParser): Parser for the LLM response.
+
+        Returns:
+            PromptTemplate: Constructed prompt template.
+        """
+        return PromptTemplate(
+            template=LLMConnectorClass.prompt_template,
+            input_variables=list(args.keys()),
+            partial_variables={"format_instructions": output_parser.get_format_instructions()},
         )
 
-        try:
-            function_description = generate_function_description(
-                "generate_custom_contents_helper",
-                "Generate custom contents",
-                ("cover_letter", "Cover Letter Content"),
-                ("resume", "Resume Content"),
-                ("message_content", "Message Content"),
-                ("message_subject_line", "Message Subject line"),
-                ("linkedin_note", "LinkedIn Note")
-            )
-            response = self.query_prompt(prompt, function_description)
-            # Check LinkedIn Note length and regenerate if necessary
-            linkedin_note = response.get("LinkedIn Note")
-            linkedin_prompt = "The LinkedIn note is too long. Please provide a shorter note. (200 characters or less)"
-            while linkedin_note and len(linkedin_note) > 300:
-                response = LLM.Completion.create(
-                    model=self.model,
-                    prompt=linkedin_prompt,
-                    temperature=0,
-                )
-                linkedin_note = response.choices[0].text.strip()
+    @staticmethod
+    def _select_output_parser() -> PydanticOutputParser:
+        """
+        Selects the appropriate output parser.
 
-        except json.JSONDecodeError:
-            logging.error("Error decoding JSON from LLM response.")
-            return {}
+        Returns:
+            PydanticOutputParser: Output parser for the LLM response.
+        """
+        return PydanticOutputParser(pydantic_object=CustomJobApplicationMaterials)
 
-    def generate_custom_contents_helper(
-        self, 
-        cover_letter: str, 
-        resume: str, 
-        message_content: str,
-        message_subject_line: str,
-        linkedin_note: str
-    ) -> dict:
-        """Parse the response from LLM API to match the required output format."""
-        return {
-            "Cover Letter": cover_letter,
-            "Resume": resume,
-            "Message Content": message_content,
-            "Message Subject": message_subject_line,
-            "LinkedIn Note": linkedin_note
-        }
+    @property
+    def llm_client(self) -> ChatOpenAI:
+        """
+        Returns the LLM client instance.
+
+        Returns:
+            ChatOpenAI: LLM client instance.
+        """
+        return self._llm_client
