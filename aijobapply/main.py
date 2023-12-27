@@ -1,12 +1,17 @@
 import argparse
+import imp
 import os
 
 cwd = os.getcwd()
 os.environ["PYTHONPATH"] = cwd
 
 
+import logging
+
 from src.job_processor import JobProcessor
 from src.utils import validate_arguments
+
+logging.basicConfig(level=logging.INFO)
 
 
 def run_application(args: dict) -> None:
@@ -25,11 +30,25 @@ def run_application(args: dict) -> None:
     """
 
     #Validate arguments
-    validated_args = validate_arguments(args)
+    try:
+        logging.info("Validating arguments...")
+        validated_args = validate_arguments(args)
+        logging.info("Arguments validated.")
+    except Exception as e:
+        logging.exception(f"Error validating arguments: {e}")
+        return
 
-    # Create job processor object
-    job_processor = JobProcessor(validated_args)
-    job_processor.process_jobs()
+    try:
+        logging.info("Creating job processor object...")
+        # Create job processor object
+        job_processor = JobProcessor(validated_args)
+
+        logging.info("Processing jobs...")
+        job_processor.process_jobs()
+        logging.info("Jobs processed.")
+    except Exception as e:
+        logging.exception(f"Error processing jobs: {e}")
+        return
 
 
 def aijobapply_cli():
@@ -53,13 +72,14 @@ def aijobapply_cli():
     parser.add_argument( "--GOOGLE_API_CREDENTIALS_FILE", type=str, default=None, help="Path to the credentials file for google api")
     parser.add_argument("--GOOGLE_SHEET_NAME", type=str, default="AIJobApply", help="Name of the google sheet to read jobs from")
     
-    parser.add_argument("--LLM_API_URL", type=str, default="https://api.openai.com/v1/chat/completions", help="LLM API URL")
+    # parser.add_argument("--LLM_API_URL", type=str, default="https://api.openai.com/v1/chat/completions", help="LLM API URL")
     parser.add_argument("--LLM_API_KEY", type=str, default=None, help="LLM api key")
     parser.add_argument("--LLM_MODEL", type=str, default=None, help="LLM model to use")
 
     parser.add_argument("--RESUME_PATH", type=str, default=None, help="Path to resume")
     parser.add_argument("--RESUME_PROFESSIONAL_SUMMARY", type=str, default=None, help="Professional summary for resume")
     parser.add_argument("--COVER_LETTER_PATH", type=str, default=None, help="Path to cover letter")
+    parser.add_argument("--DESTINATION_FOLDER", type=str, default=None, help="Folder to save documents to")
     
     args = parser.parse_args()
     

@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import tkinter as tk
 from re import T
@@ -9,12 +10,16 @@ import docx
 
 from aijobapply.main import run_application
 
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+
 # Constants
 CACHE_FILE = "aijobapply_cache.json"
 TEMPLATES_FOLDER = "templates"
 
 class AIJobApplyGUI:
     def __init__(self, root):
+        logging.info("Initializing AIJobApplyGUI")
         self.root = root
         self.setup_style()
         self.create_widgets()
@@ -46,7 +51,6 @@ class AIJobApplyGUI:
 
         # Submit button and Output text area
         self.create_submit_button()
-        self.create_output_text_area()
 
     def create_sections(self, frame):
         # Section Definitions
@@ -80,7 +84,7 @@ class AIJobApplyGUI:
                     "Google Sheet Name": ["GOOGLE_SHEET_NAME", "text"],
                     "LLM API Key": ["LLM_API_KEY", "text"],
                     "LLM Model": ["LLM_MODEL", "text"],
-                    "LLM API URL": ["LLM_API_URL", "text"]
+                    # "LLM API URL": ["LLM_API_URL", "text"]
                 },
                 "use_checkbox": False
             },
@@ -90,7 +94,8 @@ class AIJobApplyGUI:
                 "fields": {
                     "Resume File": ["RESUME_PATH", "select_file"],
                     "Resume Summary": ["RESUME_PROFESSIONAL_SUMMARY", "text_area"],
-                    "Cover Letter File": ["COVER_LETTER_PATH", "select_file"]
+                    "Cover Letter File": ["COVER_LETTER_PATH", "select_file"],
+                    "Destination Folder": ["DESTINATION_FOLDER", "select_folder"]
                 },
                 "use_checkbox": False
             }
@@ -149,19 +154,30 @@ class AIJobApplyGUI:
             label = ttk.Label(frame, text=label_text)
             label.grid(row=row, column=0, padx=5, pady=5, sticky="w")
 
-            if field_type in ["text", "password", "select_file"]:
+            if field_type in ["text", "password"]:
                 entry = ttk.Entry(frame)
                 entry.grid(row=row, column=1, padx=5, pady=5, sticky="ew")
                 if field_type == "password":
                     entry.config(show="*")
-                if field_type == "select_file":
-                    button = ttk.Button(frame, text="Select File", command=lambda entry=entry: self.select_file(entry))
-                    button.grid(row=row, column=2, padx=5, pady=5, sticky="ew")
+
+            elif field_type == "select_file":
+                entry = ttk.Entry(frame)
+                entry.grid(row=row, column=1, padx=5, pady=5, sticky="ew")
+                button = ttk.Button(frame, text="Select File", command=lambda e=entry: self.select_file(e, 'file'))
+                button.grid(row=row, column=2, padx=5, pady=5, sticky="ew")
+
+            elif field_type == "select_folder":
+                entry = ttk.Entry(frame)
+                entry.grid(row=row, column=1, padx=5, pady=5, sticky="ew")
+                button = ttk.Button(frame, text="Select Folder", command=lambda e=entry: self.select_file(e, 'folder'))
+                button.grid(row=row, column=2, padx=5, pady=5, sticky="ew")
+
             elif field_type == "text_area":
                 entry = scrolledtext.ScrolledText(frame, height=10)
                 entry.grid(row=row, column=1, padx=5, pady=5, sticky="ew")
                 button = ttk.Button(frame, text="Select File", command=lambda e=entry: self.insert_file_content(e))
                 button.grid(row=row, column=2, padx=5, pady=5)
+                
             elif field_type == "checkbox":
                 entry = ttk.Checkbutton(frame, text="Interactive Mode")
                 entry.grid(row=row, column=1, padx=5, pady=5, sticky="w")
@@ -216,62 +232,87 @@ class AIJobApplyGUI:
                         widget.state(["!alternate"] if cached_data.get(field_name, False) else ["alternate"])
 
     @staticmethod
-    def select_file(entry):
-        path = filedialog.askopenfilename()
-        if path:  # Only update the entry if a file was selected
-            entry.delete(0, tk.END)
+    def select_file(entry, select_type='file'):
+        """
+        Get the path of the selected file or folder.
+        Parameters:
+            entry: The entry widget to update with the selected path.
+            select_type: 'file' for selecting a file, 'folder' for selecting a folder.
+        """
+        if select_type == 'file':
+            path = filedialog.askopenfilename()
+        elif select_type == 'folder':
+            path = filedialog.askdirectory()
+        else:
+            raise ValueError("Invalid select_type. Must be 'file' or 'folder'.")
+
+        if path:
+            entry.delete(0, "end")
             entry.insert(0, path)
 
 
+
     def submit(self):
-        Thread(target=self.run_aijobapply, args=(self.output_text,)).start()
+        """Submits the form and runs AIJobApply."""
+        logging.debug("Submit button clicked")
+        messagebox.showinfo("AIJobApply", "AIJobApply will now run in the background. You can close this window.")
+        Thread(target=self.run_aijobapply).start()
 
-    def run_aijobapply(self, output_text):
-        data = {field: (entry.get() if isinstance(entry, tk.Entry) else entry.get("1.0", "end-1c")) 
-                for field, entry in self.entries.items() if not isinstance(entry, tk.BooleanVar)}
-        
-        # Add checkbox states to data
-        for field, entry in self.entries.items():
-            if isinstance(entry, tk.BooleanVar):
-                data[field] = entry.get()
-
-        self.save_cache(data)
-
-        # Construct and run the command
-        gmail_commands = {
-            "GMAIL_ADDRESS": data["GMAIL_ADDRESS"],
-            "GMAIL_PASSWORD": data["GMAIL_PASSWORD"],
-            # "EMAIL_CONTENT": data["EMAIL_CONTENT"],
-        }
-        linkedin_commands = {
-            "CHROMEDRIVER_PATH": data["CHROMEDRIVER_PATH"],
-            "LINKEDIN_USERNAME": data["LINKEDIN_USERNAME"],
-            "LINKEDIN_PASSWORD": data["LINKEDIN_PASSWORD"],
-            # "LINKEDIN_NOTE": data["LINKEDIN_NOTE"],
-            "INTERACTIVE": data["INTERACTIVE"] if "INTERACTIVE" in data else "False",
-        }
-        main_commands = {
-            "GOOGLE_API_CREDENTIALS_FILE": data["GOOGLE_API_CREDENTIALS_FILE"],
-            "GOOGLE_SHEET_NAME": data["GOOGLE_SHEET_NAME"],
-            "LLM_API_KEY": data["LLM_API_KEY"],
-            "LLM_MODEL": data["LLM_MODEL"],
-            "LLM_API_URL": data["LLM_API_URL"],
-            "RESUME_PATH": data["RESUME_PATH"],
-            "RESUME_PROFESSIONAL_SUMMARY": data["RESUME_PROFESSIONAL_SUMMARY"] if "RESUME_PROFESSIONAL_SUMMARY" in data else "",
-            "COVER_LETTER_PATH": data["COVER_LETTER_PATH"],
-        }
-
-        if data.get("USE_GMAIL", False):
-            main_commands.update(gmail_commands)
-            main_commands["USE_GMAIL"] = True
+    def run_aijobapply(self):
+        logging.info("Starting run_aijobapply method")
+        messagebox.showinfo("AIJobApply", "AIJobApply will now run in the background. You can close this window.")
+        try:
+            data = {field: (entry.get() if isinstance(entry, tk.Entry) else entry.get("1.0", "end-1c")) 
+                    for field, entry in self.entries.items() if not isinstance(entry, tk.BooleanVar)}
             
-        if data.get("USE_LINKEDIN", False):
-            main_commands.update(linkedin_commands)
-            main_commands["USE_LINKEDIN"] = True
-            if data.get("INTERACTIVE", False):
-                main_commands["INTERACTIVE"] = True
+            # Add checkbox states to data
+            for field, entry in self.entries.items():
+                if isinstance(entry, tk.BooleanVar):
+                    data[field] = entry.get()
 
-        run_application(main_commands)
+            self.save_cache(data)
+
+            # Construct and run the command
+            gmail_commands = {
+                "GMAIL_ADDRESS": data["GMAIL_ADDRESS"],
+                "GMAIL_PASSWORD": data["GMAIL_PASSWORD"],
+                # "EMAIL_CONTENT": data["EMAIL_CONTENT"],
+            }
+            linkedin_commands = {
+                "CHROMEDRIVER_PATH": data["CHROMEDRIVER_PATH"],
+                "LINKEDIN_USERNAME": data["LINKEDIN_USERNAME"],
+                "LINKEDIN_PASSWORD": data["LINKEDIN_PASSWORD"],
+                # "LINKEDIN_NOTE": data["LINKEDIN_NOTE"],
+                "INTERACTIVE": data["INTERACTIVE"] if "INTERACTIVE" in data else "False",
+            }
+            main_commands = {
+                "GOOGLE_API_CREDENTIALS_FILE": data["GOOGLE_API_CREDENTIALS_FILE"],
+                "GOOGLE_SHEET_NAME": data["GOOGLE_SHEET_NAME"],
+                "LLM_API_KEY": data["LLM_API_KEY"],
+                "LLM_MODEL": data["LLM_MODEL"],
+                # "LLM_API_URL": data["LLM_API_URL"],
+                "RESUME_PATH": data["RESUME_PATH"],
+                "RESUME_PROFESSIONAL_SUMMARY": data["RESUME_PROFESSIONAL_SUMMARY"] if "RESUME_PROFESSIONAL_SUMMARY" in data else "",
+                "COVER_LETTER_PATH": data["COVER_LETTER_PATH"],
+                "DESTINATION_FOLDER": data["DESTINATION_FOLDER"],
+            }
+
+            if data.get("USE_GMAIL", False):
+                main_commands.update(gmail_commands)
+                main_commands["USE_GMAIL"] = True
+                
+            if data.get("USE_LINKEDIN", False):
+                main_commands.update(linkedin_commands)
+                main_commands["USE_LINKEDIN"] = True
+                if data.get("INTERACTIVE", False):
+                    main_commands["INTERACTIVE"] = True
+
+            run_application(main_commands)
+
+            logging.info("Finished running AIJobApply.")
+        except Exception as e:
+            logging.exception(e)
+            messagebox.showerror("Error", f"Error running AIJobApply: {e}")
 
     @staticmethod
     def save_cache(data):

@@ -152,6 +152,7 @@ class LLMConnectorClass:
             "name": job['Name'],
             "cover_letter_template": self._prompt_args["cover_letter_template"],
             "resume_template": self._prompt_args["resume_template"],
+            "resume_professional_summary": self._prompt_args["resume_professional_summary"],
             # "email_template": self._prompt_args["email_template"] if self._use_email else "",
             # "linkedin_note_template": self._prompt_args["linkedin_note_template"] if self._use_linkedin else "",
         }

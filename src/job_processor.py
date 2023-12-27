@@ -5,6 +5,7 @@ from typing import Optional
 import pandas as pd
 from tqdm import tqdm
 
+from src.google_drive_handler import GoogleDriveHandler
 from src.google_sheets_handler import GoogleSheetsHandler
 from src.utils import create_job_folder, get_file_content
 
@@ -28,6 +29,11 @@ class JobProcessor:
         logger.info("JobProcessor initialized.")
         self.gc = GoogleSheetsHandler(self.GOOGLE_API_CREDENTIALS_FILE)
         logger.info("Google Sheets Sevice Account connected.")
+
+        # Extract the destination folder name from the path
+        destination_folder_name = self.DESTINATION_FOLDER.split("/")[-1]
+
+        self.google_drive_handler = GoogleDriveHandler(self.GOOGLE_API_CREDENTIALS_FILE, destination_folder_name)
         
 
     def process_jobs(self):
@@ -136,7 +142,6 @@ class JobProcessor:
             'resume_professional_summary': self.RESUME_PROFESSIONAL_SUMMARY,
             # 'email_template': self.EMAIL_CONTENT if self.USE_GMAIL else "",
             # 'linkedin_note_template': self.LINKEDIN_NOTE if self.USE_LINKEDIN else "",
-
         }
 
         LLM_handler = LLMConnectorClass(llm_args, prompt_args, self.USE_GMAIL, self.USE_LINKEDIN)
@@ -150,7 +155,12 @@ class JobProcessor:
                 job['Status'] = 'Content Generated'  # Set status if no error occurs
                 logger.info(f"Custom contents generated for job at Company Name {job['Company Name']}")
 
-                create_job_folder(job,self.RESUME_PATH) # type: ignore
+                create_job_folder(
+                    job=job,
+                    resume_path=self.RESUME_PATH,
+                    google_drive_handler=self.google_drive_handler,
+                    destination=self.DESTINATION_FOLDER,
+                )
 
             except Exception as e:
                 logger.error(f"Failed to generate custom contents for job at Company Name {job['Company Name']}. Error: {str(e)}")
