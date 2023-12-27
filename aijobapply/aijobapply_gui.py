@@ -61,7 +61,7 @@ class AIJobApplyGUI:
                 "fields": {
                     "Gmail Address": ["GMAIL_ADDRESS", "text"],
                     "Gmail Password": ["GMAIL_PASSWORD", "password"],
-                    "Email Content": ["EMAIL_CONTENT", "text_area"]
+                    # "Email Content": ["EMAIL_CONTENT", "text_area"]
                 },
                 "use_checkbox": True
             },
