@@ -43,33 +43,32 @@ class LLMConnectorClass:
             1.3 Identify soft skills like communication, teamwork, problem-solving.
             1.4 Understand the company's culture, values, mission, and vision.
 
-        Step 2: Craft a Customized Cover Letter
-        - Use the updated job description from Step 1.
-        - Sub-steps:
-            2.1 Start with the Cover Letter Template: ``` {cover_letter_template} ```
-            2.2 Integrate elements from the updated job description relevant to the {position}.
-            2.3 Personalize the introduction, emphasizing your interest in the role.
-            2.4 Tailor the body of the letter to reflect your matching skills and experiences.
-            2.5 Conclude with a strong, relevant closing statement.
-            2.6 Ensure it is under 250
-        - Focus: Clarity, relevance, and personalization.
-        - Place the output in the key "cover_letter" in the output JSON.
-
-        Step 3: Enhance the Resume
+        Step 2: Enhance the Resume
         - Reference the updated job description from Step 1.
         - Sub-steps:
             3.1 Utilize the Resume Template: ``` {resume_template} ``` and the Resume Professional Summary: ``` {resume_professional_summary} ```
             3.2 Revise the professional summary to align with the new job description. Have a statement "Seeking a {position} at {company_name} ..." in it and provide it in the "resume_summary" key.
-            3.3 Ensure the resume summary is under 75 words.
-            3.4 To Update the skills and experiences sections to reflect relevant qualifications find the missing skills and keywords not present in the resume. 
+            3.4 Provide the technical skills and tools that are missing in the resume but are required for the job (based on the job description). Provide only technical keywords which generally reflect hard skills.
             Provide the missing keywords in the "missing_keywords" key.
         - Aim: Reflect the key aspects of the job description accurately.
         - Place the outputs in the keys "resume_summary" and "missing_keywords" in the output JSON.
+        
+        Step 3: Craft a Customized Cover Letter
+        - Use the updated job description from Step 1 and the resume from Step 2.
+        - Sub-steps:
+            2.1 Start with the Cover Letter Template: ``` {cover_letter_template} ```
+            2.2 Integrate elements from the updated job description relevant to the {position} and my skills from the resume.
+            2.3 Personalize the introduction, emphasizing your interest in the role.
+            2.4 Tailor the body of the letter to reflect your matching skills and experiences.
+            2.5 Conclude with a strong, relevant closing statement.
+            2.6 Ensure it is under 250 characters. Ensure proper grammar, punctuation, and spacing.
+        - Focus: Clarity, relevance, and personalization.
+        - Place the output in the key "cover_letter" in the output JSON.
 
         Step 4: Compose a Professional Email
         - Sub-steps:
             4.1 Based on the job description, draft a professional email to the recruiter or hiring manager with content from the cover letter.
-            4.2 Create a personalized greeting addressing the recipient by name ``` Dear {name}, ```
+            4.2 Create a placeholder for recruiter's name as Dear [Contact Name]
             4.3 Write a concise email body, mentioning the job link and company name.
             4.4 Develop a subject line that is both relevant and attention-grabbing. It should be under 100 characters.
         - Objective: Clear and professional email communication.
@@ -77,9 +76,8 @@ class LLMConnectorClass:
 
         Step 5: Compose a LinkedIn Note
         -Use the following template:
-            Dear {name},
-            I am interested in an open {position} role at {company_name}. I'd be grateful to connect
-            and discuss my skill and experience alignment. I look forward to hearing from you.
+            Dear [Contact Name],
+            I am keen on an open {position} role at {company_name}. I'd appreciate the opportunity to connect and explore how my expertise aligns with this role
         - Place the output in the key "linkedin_note" in the output JSON.
 
         Output: 
@@ -146,10 +144,11 @@ class LLMConnectorClass:
             Dict[str, str]: Arguments for the prompt.
         """
         prompt_args = {
-            "job_description": trim(job["Description"]),
+            # "job_description": trim(job["Description"]),
+            "job_description": job["Description"],
             "position": job["Position"],
             "company_name": job["Company Name"],
-            "name": job['Name'],
+            "name": job['Contact Name'],
             "cover_letter_template": self._prompt_args["cover_letter_template"],
             "resume_template": self._prompt_args["resume_template"],
             "resume_professional_summary": self._prompt_args["resume_professional_summary"],

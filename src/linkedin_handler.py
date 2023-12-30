@@ -43,8 +43,8 @@ class LinkedInConnectorClass:
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
-        if not interactive:
-            options.add_argument("--headless")
+        # if not interactive:
+        #     options.add_argument("--headless")
         prefs = {"profile.managed_default_content_settings.images": 5,}
         options.add_experimental_option("prefs", prefs)
         service = webdriver.ChromeService(executable_path=driver_path)
@@ -58,25 +58,60 @@ class LinkedInConnectorClass:
             raise ValueError("Linkedin Username or password not provided.")
         try:
             self.driver.get('https://www.linkedin.com/login')
-            self.enter_text(By.ID, 'username', username)
-            self.enter_text(By.ID, 'password', password)
-            if not self.click("//button[@type='submit']"):
-                self.logger.error("Login button click failed")
+            # self.enter_text(By.ID, 'username', username)
+            # self.enter_text(By.ID, 'password', password)
+            # if not self.click("//button[@type='submit']"):
+            #     self.logger.error("Login button click failed")
+            # Wait for the user to manually login, wait indefinitely
+            WebDriverWait(self.driver, 100000).until(EC.url_contains("feed"))
         except (NoSuchElementException, TimeoutException) as e:
             self.logger.error(f"Error while logging in: {e}")
+
+    def scrape_job(self, job_url: str) -> dict:
+        """Scrapes the job details from the given LinkedIn job URL.
+
+        Args:
+            job_url (str): LinkedIn job URL.
+
+        Returns:
+            dict: Job details. A dictionary with the following keys: Company Name, Position, Description
+        """
+        self.driver.get(job_url)
+        try:
+            company_name = self.driver.find_element(By.CLASS_NAME, "topcard__org-name-link").text
+            position = self.driver.find_element(By.CLASS_NAME, "topcard__title").text
+            description = self.driver.find_element(By.CLASS_NAME, "description__text").text
+        except NoSuchElementException:
+            self.logger.error("Error while scraping job details")
+            return None
+        job = {
+            "Company Name": company_name,
+            "Position": position,
+            "Description": description,
+        }
+        return job
 
     def send_connection_request(self, profile_url, note):
         """
         Sends a connection request to the given LinkedIn profile URL.
         Adds a note if provided.
         """
+        self.driver.get(profile_url)
+        # Get the name from the profile URL
+        name = self.get_name_from_url(profile_url)
+
         self.click_connect_button(profile_url)
+
+        # Replace [Contact Name] with the name from the URL
+        note = note.replace("[Contact Name]", name)
         self.add_note_and_send(note)
+
+        return name
 
     def get_name_from_url(self, profile_url):
         """Extracts the name from the given LinkedIn profile URL."""
         # Extract the first name from the URL
-        profile_identifier = re.search(r'/in/(.+?)/', profile_url).group(1)
+        profile_identifier = re.search(r'/in/([^/?]+)', profile_url).group(1)
         name_xpath = f"//a[contains(@href, '/in/{profile_identifier}/')]/h1[contains(@class, 'text-heading-xlarge')]"
         try:
             name_element = self.driver.find_element(By.XPATH, name_xpath)
@@ -92,7 +127,6 @@ class LinkedInConnectorClass:
         Navigates to the given profile URL and clicks the "Connect" button.
         If the button is within a dropdown, expands the dropdown first.
         """
-        self.driver.get(profile_url)
 
         # Get the name from the profile URL
         name = self.get_name_from_url(profile_url)
@@ -134,6 +168,10 @@ class LinkedInConnectorClass:
 
     def add_note_and_send(self, note):
         """Adds a note to the connection request and sends it."""
+
+        # If note is above 200 characters, truncate it
+        if len(note) > 200:
+            note = note[:200]
         try:
             if not self.click("//button[@aria-label='Add a note']"):
                 raise Exception("No Add a note button found")
