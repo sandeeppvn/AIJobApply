@@ -35,7 +35,7 @@ class LLMConnectorClass:
         - Then, create specific application materials.
         Return only the final output json with all the keys and values populated.
 
-        Step 1: Ana;lyze the Job Description
+        Step 1: Analyze the Job Description
         - Input: Raw Job Description: {job_description}, Job Title: {position}
         - Sub-steps:
             1.1 Analyze the raw job description for key roles and responsibilities.
@@ -47,10 +47,10 @@ class LLMConnectorClass:
         - Reference the updated job description from Step 1.
         - Sub-steps:
             3.1 Utilize the Resume Template: ``` {resume_template} ``` and the Resume Professional Summary: ``` {resume_professional_summary} ```
-            3.2 Revise the professional summary to align with the new job description. Have a statement "Seeking a {position} at {company_name} ..." in it and provide it in the "resume_summary" key.
+            3.2 Revise the professional summary to align with the new job description. Have a statement "Seeking a {position} at {company_name} ..." in it and provide it in the "resume_summary" key. If the {position} seems inappropriate, generalize it from what can be understood.
             3.4 Provide the technical skills and tools that are missing in the resume but are required for the job (based on the job description). Provide only technical keywords which generally reflect hard skills.
             Provide the missing keywords in the "missing_keywords" key.
-        - Aim: Reflect the key aspects of the job description accurately.
+        - Aim: Reflect the key aspects of the job description accurately. Ensure adequate soft skills are also covered.
         - Place the outputs in the keys "resume_summary" and "missing_keywords" in the output JSON.
         
         Step 3: Craft a Customized Cover Letter
