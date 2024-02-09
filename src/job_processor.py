@@ -36,9 +36,10 @@ class JobProcessor:
 
         self.google_drive_handler = GoogleDriveHandler(self.GOOGLE_API_CREDENTIALS_FILE, destination_folder_name)
 
-        logger.info("Logging into LinkedIn...")
-        self.linkedin_handler = LinkedInConnectorClass(self.CHROMEDRIVER_PATH, self.INTERACTIVE)
-        self.linkedin_handler.login(self.LINKEDIN_USERNAME, self.LINKEDIN_PASSWORD)
+        if self.USE_LINKEDIN:
+            logger.info("Logging into LinkedIn...")
+            self.linkedin_handler = LinkedInConnectorClass(self.CHROMEDRIVER_PATH, self.INTERACTIVE)
+            self.linkedin_handler.login(self.LINKEDIN_USERNAME, self.LINKEDIN_PASSWORD)
         
 
     def process_jobs(self):

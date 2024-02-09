@@ -58,10 +58,10 @@ class LLMConnectorClass:
         - Sub-steps:
             2.1 Start with the Cover Letter Template: ``` {cover_letter_template} ```
             2.2 Integrate elements from the updated job description relevant to the {position} and my skills from the resume.
-            2.3 Personalize the introduction, emphasizing your interest in the role.
+            2.3 Personalize the introduction, emphasizing your interest in the role. Ensure to follow the instruction and fill the placeholder <Two sentences about what inspires me to join the company.>
             2.4 Tailor the body of the letter to reflect your matching skills and experiences.
             2.5 Conclude with a strong, relevant closing statement.
-            2.6 Ensure it is under 250 characters. Ensure proper grammar, punctuation, and spacing.
+            2.6 Ensure it is under 250 characters. Ensure proper grammar, punctuation, and spacing. Ensure text is properly formatted with proper spacing and line breaks.
         - Focus: Clarity, relevance, and personalization.
         - Place the output in the key "cover_letter" in the output JSON.
 
@@ -70,7 +70,7 @@ class LLMConnectorClass:
             4.1 Based on the job description, draft a professional email to the recruiter or hiring manager with content from the cover letter.
             4.2 Create a placeholder for recruiter's name as Dear [Contact Name]
             4.3 Write a concise email body, mentioning the job link and company name.
-            4.4 Develop a subject line that is both relevant and attention-grabbing. It should be under 100 characters.
+            4.4 Develop a subject line that is both relevant and attention-grabbing. It should be under 100 characters. Ensure text is properly formatted with proper spacing and line breaks.
         - Objective: Clear and professional email communication.
         - Place the output in the keys "email_content" and "email_subject" in the output JSON.
 
