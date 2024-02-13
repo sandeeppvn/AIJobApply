@@ -1,12 +1,16 @@
 import json
 import logging
 import os
+# Set the PYTHONPATH to the root of the project
+import sys
 import tkinter as tk
 from re import T
 from threading import Thread
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 
 import docx
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from aijobapply.main import run_application
 
