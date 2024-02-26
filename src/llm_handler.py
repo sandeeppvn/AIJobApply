@@ -61,23 +61,24 @@ class LLMConnectorClass:
             2.3 Personalize the introduction, emphasizing your interest in the role. Ensure to follow the instruction and fill the placeholder <Two sentences about what inspires me to join the company.>
             2.4 Tailor the body of the letter to reflect your matching skills and experiences.
             2.5 Conclude with a strong, relevant closing statement.
-            2.6 Ensure it is under 250 characters. Ensure proper grammar, punctuation, and spacing. Ensure text is properly formatted with proper spacing and line breaks.
+            2.6 Ensure proper grammar, punctuation, and spacing and no redundancy. Ensure text is properly formatted with proper spacing, line breaks, salutations, signatures and paragraphs.
         - Focus: Clarity, relevance, and personalization.
         - Place the output in the key "cover_letter" in the output JSON.
 
         Step 4: Compose a Professional Email
         - Sub-steps:
             4.1 Based on the job description, draft a professional email to the recruiter or hiring manager with content from the cover letter.
-            4.2 Create a placeholder for recruiter's name as Dear [Contact Name]
+            4.2 Use the name: {name} and the company name: {company_name} in the email.
             4.3 Write a concise email body, mentioning the job link and company name.
             4.4 Develop a subject line that is both relevant and attention-grabbing. It should be under 100 characters. Ensure text is properly formatted with proper spacing and line breaks.
         - Objective: Clear and professional email communication.
         - Place the output in the keys "email_content" and "email_subject" in the output JSON.
 
         Step 5: Compose a LinkedIn Note
-        -Use the following template:
-            Dear [Contact Name],
+        - Use the following template:
+            Dear {name},
             I am keen on an open {position} role at {company_name}. I'd appreciate the opportunity to connect and explore how my expertise aligns with this role
+        - Provide with proper grammar, punctuation, and spacing, formatted with proper spacing, line breaks, salutations, signatures and paragraphs.
         - Place the output in the key "linkedin_note" in the output JSON.
 
         Output: 
