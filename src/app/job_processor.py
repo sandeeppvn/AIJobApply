@@ -4,11 +4,12 @@ import time
 import pandas as pd
 from tqdm import tqdm
 
-from src.google_drive_handler import GoogleDriveHandler
-from src.google_sheets_handler import GoogleSheetsHandler
-from src.linkedin_handler import LinkedInConnectorClass
-from src.LLM_handler import LLMConnectorClass
-from src.utils import create_job_folder, get_file_content
+from src.handlers.google_drive_handler import GoogleDriveHandler
+from src.handlers.google_sheets_handler import GoogleSheetsHandler
+from src.handlers.linkedin_handler import LinkedInConnectorClass
+from src.handlers.LLM_handler import LLMConnectorClass
+from src.utils.create_job_folder import create_job_folder
+from src.utils.get_file_content import get_file_content
 
 tqdm.pandas()
 logger = logging.getLogger(__name__)
@@ -260,7 +261,7 @@ class JobProcessor:
             - job (Series): Pandas Series containing the details of a job.
             - email_handler (EmailHandler): Instance of EmailHandler.
         """
-        from src.email_handler import EmailHandler
+        from src.handlers.email_handler import EmailHandler
         email_handler = EmailHandler(self.GMAIL_ADDRESS, self.GMAIL_PASSWORD)
         logger.info("Email Connection Established.")
         logger.info(f"Sending emails to {len(jobs_df)} contacts...")

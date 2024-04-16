@@ -1,5 +1,4 @@
 import argparse
-import imp
 import os
 
 cwd = os.getcwd()
@@ -8,8 +7,8 @@ os.environ["PYTHONPATH"] = cwd
 
 import logging
 
-from src.job_processor import JobProcessor
-from src.utils import validate_arguments
+from src.app.job_processor import JobProcessor
+from src.utils.validate_arguments import validate_arguments
 
 logging.basicConfig(level=logging.INFO)
 

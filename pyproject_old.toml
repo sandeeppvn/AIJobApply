@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=40.6.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "AIJobApply"
+version = "4.0.0"
+description = "Package to apply for jobs automatically and send emails"
+authors = [{name = "Sandeeppvn", email = "sandeeppvn@gmail.com"}]
+readme = "README.md"
+dependencies = [
+    "ConfigParser",
+    "openai",
+    "pytest",
+    "python-dotenv",
+    "tqdm",
+    "requests",
+    "gspread",
+    "pandas",
+    "selenium",
+    "tk",
+    "langchain",
+    "validate_email",
+    "pydantic",
+    "gptrim",
+    "docxtpl",
+    "python-docx",
+    "google-api-python-client",
+    "gradio",
+    "beautifulsoup4",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+homepage =  "https://github.com/sandeeppvn/AIJobApply"
+
+[project.scripts]
+aijobapply = "aijobapply.main:aijobapply_cli"
+
+[project.entry-points.console_scripts]
+aijobapply-cli = "aijobapply.main:aijobapply_cli"

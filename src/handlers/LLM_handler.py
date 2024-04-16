@@ -2,11 +2,10 @@ import logging
 from typing import Dict
 
 import pandas as pd
-from gptrim import trim
-from langchain.callbacks import get_openai_callback
-from langchain.chat_models import ChatOpenAI
 from langchain.output_parsers import PydanticOutputParser
 from langchain.prompts import PromptTemplate
+from langchain_community.callbacks import get_openai_callback
+from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
 # Configure logging for the application.
@@ -21,7 +20,7 @@ class CustomJobApplicationMaterials(BaseModel):
     missing_keywords: str = Field(description="Missing Keywords")
     email_content: str = Field(description="Refined Email Content")
     email_subject: str = Field(description="Email Subject Line")
-    linkedin_note: str = Field(description="LinkedIn Note")
+    linkedin_note: str = Field(description="LinkedIn Note with less than 300 characters including spaces.")
 
 class LLMConnectorClass:
     """

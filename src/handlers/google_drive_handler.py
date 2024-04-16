@@ -1,4 +1,3 @@
-import os
 from typing import Optional
 
 from google.oauth2 import service_account
