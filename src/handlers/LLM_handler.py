@@ -46,7 +46,7 @@ class LLMConnectorClass:
         - Reference the updated job description from Step 1.
         - Sub-steps:
             3.1 Utilize the Resume Template: ``` {resume_template} ``` and the Resume Professional Summary: ``` {resume_professional_summary} ```
-            3.2 Revise the professional summary to align with the new job description. Have a statement "Seeking a {position} at {company_name} ..." in it and provide it in the "resume_summary" key. If the {position} seems inappropriate, generalize it from what can be understood.
+            3.2 Revise the professional summary to align with the new job description. Have a statement "Seeking a {position} at {company_name} ..." in it and provide it in the "resume_summary" key. If the {position} seems inappropriate, generalize it from what can be understood. Ensure it is concise (Under 60 words) and impactful trying to incorporate keywords from the job description.
             3.4 Provide the technical skills and tools that are missing in the resume but are required for the job (based on the job description). Provide only technical keywords which generally reflect hard skills.
             Provide the missing keywords in the "missing_keywords" key.
         - Aim: Reflect the key aspects of the job description accurately. Ensure adequate soft skills are also covered.
